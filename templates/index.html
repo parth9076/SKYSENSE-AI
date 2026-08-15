@@ -23,10 +23,6 @@
         header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 15px; margin-bottom: 25px; }
         .logo-area { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1.15rem; cursor: pointer; }
         .logo-area span { color: #3b82f6; }
-        .nav-links { display: flex; gap: 30px; font-size: 0.9rem; color: #94a3b8; }
-        .nav-links div { cursor: pointer; padding-bottom: 17px; transition: color 0.2s; }
-        .nav-links div:hover { color: #ffffff; }
-        .nav-links .active { color: #ffffff; font-weight: 500; border-bottom: 2px solid #3b82f6; }
         
         .header-right { display: flex; align-items: center; gap: 15px; }
         .location-btn { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: white; padding: 9px 14px; border-radius: 8px; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: background 0.2s; }
@@ -43,39 +39,48 @@
         .view-section { display: none; }
         .view-section.active-view { display: block; }
 
-        /* Responsive Layout */
+        /* Responsive Layout Grid */
         .dashboard-grid { display: grid; grid-template-columns: 1.3fr 1fr; gap: 20px; max-width: 1300px; margin: 0 auto; transition: opacity 0.3s; }
         @media (max-width: 900px) { .dashboard-grid { grid-template-columns: 1fr; } body { padding: 10px; } }
         
-        .card { background: rgba(17, 24, 39, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; padding: 24px; }
+        .card { background: rgba(17, 24, 39, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; padding: 24px; margin-bottom: 20px; }
         .location-title { font-size: 1.1rem; font-weight: 600; display: flex; align-items: center; gap: 8px; }
         .main-temp-display { display: flex; align-items: baseline; gap: 15px; margin: 15px 0; }
         .temp-value { font-size: 4.5rem; font-weight: 300; }
+        .desc-text { color: #94a3b8; font-size: 1.1rem; text-transform: capitalize; }
         
-        .micro-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 25px; }
-        .stat-pill { background: rgba(255, 255, 255, 0.03); padding: 12px; border-radius: 12px; text-align: center; }
-        
+        .micro-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 20px; }
+        .stat-pill { background: rgba(255, 255, 255, 0.03); padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); }
+        .stat-label { font-size: 0.8rem; color: #94a3b8; }
+        .stat-val { font-size: 1.1rem; font-weight: 600; margin-top: 4px; }
+
+        .section-header { font-size: 1rem; font-weight: 600; margin-bottom: 15px; color: #cbd5e1; }
         .rain-timeline { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
-        .rain-slot { background: rgba(255, 255, 255, 0.02); padding: 10px; border-radius: 10px; text-align: center; }
-        
+        .rain-slot { background: rgba(255, 255, 255, 0.02); padding: 12px 8px; border-radius: 10px; text-align: center; border: 1px solid rgba(255,255,255,0.04); }
+        .rain-time { font-size: 0.75rem; color: #94a3b8; }
+        .rain-val { font-size: 0.95rem; font-weight: 600; margin-top: 6px; color: #3b82f6; }
+
         /* Chatbot Widget */
         .chat-widget { position: fixed; bottom: 25px; right: 25px; z-index: 1000; }
-        .chat-btn { background: #3b82f6; border-radius: 50%; width: 65px; height: 65px; cursor: pointer; border: none; color: white; font-size: 28px; }
-        .chat-window { display: none; width: 350px; height: 450px; background: rgba(17, 24, 39, 0.95); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; flex-direction: column; margin-bottom: 15px; overflow: hidden; }
-        .chat-messages { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
-        .msg { padding: 10px; border-radius: 10px; font-size: 0.9rem; }
+        .chat-btn { background: #3b82f6; border-radius: 50%; width: 65px; height: 65px; cursor: pointer; border: none; color: white; font-size: 26px; box-shadow: 0 4px 12px rgba(59,130,246,0.4); }
+        .chat-window { display: none; width: 340px; height: 420px; background: rgba(17, 24, 39, 0.95); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; flex-direction: column; margin-bottom: 15px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        .chat-messages { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+        .msg { padding: 10px 14px; border-radius: 12px; font-size: 0.85rem; max-width: 85%; line-height: 1.4; }
         .msg.user { background: #3b82f6; align-self: flex-end; }
-        .msg.ai { background: rgba(255, 255, 255, 0.1); align-self: flex-start; }
-        .chat-input-area { padding: 15px; background: rgba(0,0,0,0.2); display: flex; gap: 10px; }
+        .msg.ai { background: rgba(255, 255, 255, 0.08); align-self: flex-start; color: #e2e8f0; }
+        .chat-input-area { padding: 12px; background: rgba(0,0,0,0.3); display: flex; gap: 8px; border-top: 1px solid rgba(255,255,255,0.06); }
+        .chat-input-area input { flex: 1; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 8px 12px; border-radius: 8px; color: white; font-size: 0.85rem; outline: none; }
+        .chat-input-area button { background: #3b82f6; border: none; color: white; padding: 8px 14px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem; }
     </style>
 </head>
 <body>
 
     <header>
-        <div class="logo-area" onclick="switchTab('dashboard')">☀️ SkySense <span>AI</span></div>
+        <div class="logo-area">☀️ SkySense <span>AI</span></div>
         <div class="header-right">
             <button class="location-btn" onclick="detectUserLocation()">📍 Use My Location</button>
             <div class="search-bar-wrapper">
+                <svg class="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                 <input type="text" id="cityInput" placeholder="Search city..." autocomplete="off">
                 <div id="suggestionsBox" class="suggestions-box"></div>
             </div>
@@ -89,17 +94,38 @@
         <div class="dashboard-grid">
             <div>
                 <div class="card">
-                    <div class="location-title" id="locationDisplay">📍 Detecting Location...</div>
+                    <div class="location-title" id="locationDisplay">📍 Loading Location...</div>
                     <div class="main-temp-display">
                         <div class="temp-value" id="tempDisplay">--°</div>
-                        <div id="descDisplay">--</div>
+                        <div class="desc-text" id="descDisplay">Fetching telemetry...</div>
+                    </div>
+                    <div class="micro-stats">
+                        <div class="stat-pill">
+                            <div class="stat-label">Humidity</div>
+                            <div class="stat-val" id="humidityDisplay">--%</div>
+                        </div>
+                        <div class="stat-pill">
+                            <div class="stat-label">Wind Speed</div>
+                            <div class="stat-val" id="windDisplay">-- m/s</div>
+                        </div>
                     </div>
                 </div>
             </div>
             <div>
                 <div class="card">
-                    <div class="section-header">🌧️ Hourly Rain Probability</div>
-                    <div class="rain-timeline" id="rainTimelineContainer"></div>
+                    <div class="section-header">🌧️ Hourly Rain Timeline</div>
+                    <div class="rain-timeline" id="rainTimelineContainer">
+                        <div class="rain-slot"><div class="rain-time">--:--</div><div class="rain-val">--%</div></div>
+                        <div class="rain-slot"><div class="rain-time">--:--</div><div class="rain-val">--%</div></div>
+                        <div class="rain-slot"><div class="rain-time">--:--</div><div class="rain-val">--%</div></div>
+                        <div class="rain-slot"><div class="rain-time">--:--</div><div class="rain-val">--%</div></div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="section-header">🤖 Gemini AI Weather Insight</div>
+                    <div id="aiInsightText" style="font-size: 0.9rem; color: #cbd5e1; line-height: 1.5;">
+                        Analyzing meteorological parameters...
+                    </div>
                 </div>
             </div>
         </div>
@@ -108,10 +134,10 @@
     <div class="chat-widget">
         <div class="chat-window" id="chatWindow">
             <div class="chat-messages" id="chatMessages">
-                <div class="msg ai">Hello! Ask me: "What should I do today?"</div>
+                <div class="msg ai">Hello! Ask me anything about conditions or clothing recommendations for today.</div>
             </div>
             <div class="chat-input-area">
-                <input type="text" id="chatInput" placeholder="Ask me...">
+                <input type="text" id="chatInput" placeholder="Ask AI..." onkeypress="if(event.key === 'Enter') sendChatMessage()">
                 <button onclick="sendChatMessage()">Send</button>
             </div>
         </div>
@@ -119,6 +145,8 @@
     </div>
 
     <script>
+        let globalChatContext = "";
+
         function toggleLoading(show) {
             document.getElementById('loading-spinner').style.display = show ? 'block' : 'none';
             document.getElementById('view-dashboard').style.opacity = show ? '0.5' : '1';
@@ -131,26 +159,102 @@
             setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 3000);
         }
 
-        async function getWeatherByCoords(lat, lon, displayName) {
-            toggleLoading(true);
-            try {
-                const response = await fetch(`/api/weather?lat=${lat}&lon=${lon}&city=${encodeURIComponent(displayName)}`);
-                const data = await response.json();
-                if (data.error) throw new Error(data.error);
-                updateDashboard(data);
-            } catch (err) {
-                showToast(err.message);
-            } finally {
-                toggleLoading(false);
-            }
-        }
-
         function toggleChat() {
             const chatWin = document.getElementById('chatWindow');
             chatWin.style.display = chatWin.style.display === 'flex' ? 'none' : 'flex';
         }
 
-        // Add the rest of your updateDashboard and location logic here
+        async function fetchWeatherData(urlQuery) {
+            toggleLoading(true);
+            try {
+                const response = await fetch(`/api/weather?${urlQuery}`);
+                const data = await response.json();
+                if (data.error) throw new Error(data.error);
+                updateDashboard(data);
+            } catch (err) {
+                showToast(err.message || "Failed to fetch weather data.");
+            } finally {
+                toggleLoading(false);
+            }
+        }
+
+        function updateDashboard(data) {
+            document.getElementById('locationDisplay').innerText = `📍 ${data.city}`;
+            document.getElementById('tempDisplay').innerText = `${Math.round(data.temp)}°`;
+            document.getElementById('descDisplay').innerText = data.description;
+            document.getElementById('humidityDisplay').innerText = `${data.humidity}%`;
+            document.getElementById('windDisplay').innerText = `${data.wind_speed} m/s`;
+            document.getElementById('aiInsightText').innerText = data.ai_insight || "No AI insight available.";
+
+            // Save context for chat
+            globalChatContext = `Current weather in ${data.city}: ${Math.round(data.temp)}°C, ${data.description}, Humidity: ${data.humidity}%.`;
+
+            // Render Rain Timeline if available
+            const container = document.getElementById('rainTimelineContainer');
+            container.innerHTML = '';
+            if (data.forecast && data.forecast.length > 0) {
+                data.forecast.slice(0, 4).forEach(item => {
+                    container.innerHTML += `
+                        <div class="rain-slot">
+                            <div class="rain-time">${item.time}</div>
+                            <div class="rain-val">${item.pop}%</div>
+                        </div>`;
+                });
+            } else {
+                container.innerHTML = '<div style="grid-column: span 4; text-align:center; color:#64748b; font-size:0.85rem;">No hourly rain data</div>';
+            }
+        }
+
+        function detectUserLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    position => {
+                        fetchWeatherData(`lat=${position.coords.latitude}&lon=${position.coords.longitude}`);
+                    },
+                    () => {
+                        // Fallback default if permission denied
+                        fetchWeatherData('city=Pune');
+                    }
+                );
+            } else {
+                fetchWeatherData('city=Pune');
+            }
+        }
+
+        // Search Input Event Listener
+        const cityInput = document.getElementById('cityInput');
+        cityInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && this.value.trim()) {
+                fetchWeatherData(`city=${encodeURIComponent(this.value.trim())}`);
+                this.value = '';
+            }
+        });
+
+        async function sendChatMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            if (!message) return;
+
+            const chatMessages = document.getElementById('chatMessages');
+            chatMessages.innerHTML += `<div class="msg user">${message}</div>`;
+            input.value = '';
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: message, context: globalChatContext })
+                });
+                const data = await response.json();
+                chatMessages.innerHTML += `<div class="msg ai">${data.reply || "I couldn't process that."}</div>`;
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            } catch (err) {
+                chatMessages.innerHTML += `<div class="msg ai" style="color:#ef4444;">Error reaching AI assistant.</div>`;
+            }
+        }
+
+        // Initialize on load
         window.onload = () => detectUserLocation();
     </script>
 </body>
