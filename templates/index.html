@@ -1783,6 +1783,156 @@
             }
         }
 
+
+        /* =========================================================
+           FORECAST INTELLIGENCE
+           ========================================================= */
+
+        .forecast-intelligence-card {
+            position: relative;
+            overflow: hidden;
+            background:
+                radial-gradient(circle at 100% 0%, rgba(96,165,250,.12), transparent 35%),
+                linear-gradient(145deg, rgba(15,23,42,.92), rgba(15,23,42,.72));
+        }
+
+        .forecast-intelligence-card::after {
+            content: "";
+            position: absolute;
+            width: 180px;
+            height: 180px;
+            right: -80px;
+            bottom: -100px;
+            border-radius: 50%;
+            background: rgba(56,189,248,.08);
+            filter: blur(20px);
+            pointer-events: none;
+        }
+
+        .forecast-intel-head {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 14px;
+            margin-bottom: 18px;
+        }
+
+        .ensemble-badge {
+            flex: 0 0 auto;
+            padding: 7px 10px;
+            border-radius: 999px;
+            border: 1px solid rgba(96,165,250,.18);
+            background: rgba(59,130,246,.08);
+            color: #93c5fd;
+            font-size: .68rem;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .ensemble-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .ensemble-metric {
+            padding: 14px;
+            border-radius: 14px;
+            border: 1px solid rgba(255,255,255,.07);
+            background: rgba(255,255,255,.025);
+        }
+
+        .ensemble-label {
+            color: #64748b;
+            font-size: .67rem;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            margin-bottom: 7px;
+        }
+
+        .ensemble-value {
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: #f8fafc;
+        }
+
+        .ensemble-sub {
+            margin-top: 4px;
+            color: #64748b;
+            font-size: .65rem;
+            line-height: 1.4;
+        }
+
+        .ensemble-explainer {
+            display: flex;
+            gap: 11px;
+            align-items: flex-start;
+            margin-top: 12px;
+            padding: 13px 14px;
+            border-radius: 13px;
+            border: 1px solid rgba(255,255,255,.06);
+            background: rgba(2,6,23,.24);
+        }
+
+        .ensemble-icon {
+            display: grid;
+            place-items: center;
+            width: 28px;
+            height: 28px;
+            flex: 0 0 28px;
+            border-radius: 9px;
+            background: rgba(59,130,246,.12);
+            color: #60a5fa;
+            font-size: 1rem;
+        }
+
+        .ensemble-explainer strong {
+            font-size: .78rem;
+        }
+
+        .ensemble-explainer p {
+            margin: 3px 0 0;
+            color: #64748b;
+            font-size: .7rem;
+            line-height: 1.55;
+        }
+
+        .ensemble-confidence-high {
+            color: #4ade80 !important;
+        }
+
+        .ensemble-confidence-moderate {
+            color: #fbbf24 !important;
+        }
+
+        .ensemble-confidence-lower {
+            color: #fb7185 !important;
+        }
+
+        @media (max-width: 850px) {
+            .ensemble-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 480px) {
+            .forecast-intel-head {
+                flex-direction: column;
+            }
+
+            .ensemble-badge {
+                white-space: normal;
+            }
+
+            .ensemble-grid {
+                grid-template-columns: minmax(0, 1fr);
+            }
+
+            .ensemble-explainer {
+                padding: 12px;
+            }
+        }
+
 </style>
 </head>
 <body>
@@ -1915,6 +2065,58 @@
                 <div class="forecast-legend"><span>High</span><span>Low</span><span>Rain</span></div>
             </div>
             <div id="modernForecastList" class="modern-forecast-list"></div>
+        </div>
+
+
+        <div class="card forecast-intelligence-card" id="forecastIntelligenceCard">
+            <div class="forecast-intel-head">
+                <div>
+                    <div class="section-header">🧠 Forecast Intelligence</div>
+                    <div class="mini-caption">
+                        Probabilistic guidance from an ECMWF ensemble
+                    </div>
+                </div>
+                <div class="ensemble-badge" id="ensembleBadge">Loading…</div>
+            </div>
+
+            <div class="ensemble-grid">
+                <div class="ensemble-metric">
+                    <div class="ensemble-label">Forecast confidence</div>
+                    <div class="ensemble-value" id="ensembleConfidence">--</div>
+                    <div class="ensemble-sub" id="ensembleConfidenceNote">Waiting for model guidance</div>
+                </div>
+
+                <div class="ensemble-metric">
+                    <div class="ensemble-label">Model spread</div>
+                    <div class="ensemble-value"><span id="ensembleSpread">--</span>°C</div>
+                    <div class="ensemble-sub">Average temperature uncertainty</div>
+                </div>
+
+                <div class="ensemble-metric">
+                    <div class="ensemble-label">Rain probability</div>
+                    <div class="ensemble-value"><span id="ensembleRain">--</span>%</div>
+                    <div class="ensemble-sub">Peak ensemble precipitation signal</div>
+                </div>
+
+                <div class="ensemble-metric">
+                    <div class="ensemble-label">Next 24h range</div>
+                    <div class="ensemble-value" id="ensembleRange">--</div>
+                    <div class="ensemble-sub">10th–90th percentile guidance</div>
+                </div>
+            </div>
+
+            <div class="ensemble-explainer">
+                <span class="ensemble-icon">◎</span>
+                <div>
+                    <strong>Why this matters</strong>
+                    <p>
+                        Instead of relying on one forecast run, SkySense looks at
+                        many slightly different model simulations. A tighter spread
+                        generally means the model members agree more closely; a wider
+                        spread means the forecast is more uncertain.
+                    </p>
+                </div>
+            </div>
         </div>
 
         <div class="card forecast-detail-card">
@@ -2417,6 +2619,93 @@
             }).join('');
         }
 
+
+        async function loadForecastIntelligence(data) {
+            const card = document.getElementById('forecastIntelligenceCard');
+
+            if (!card || !data?.latitude || !data?.longitude) {
+                return;
+            }
+
+            const badge = document.getElementById('ensembleBadge');
+            const confidence = document.getElementById('ensembleConfidence');
+            const confidenceNote = document.getElementById('ensembleConfidenceNote');
+            const spread = document.getElementById('ensembleSpread');
+            const rain = document.getElementById('ensembleRain');
+            const range = document.getElementById('ensembleRange');
+
+            try {
+                badge.textContent = 'ECMWF • 51 members';
+
+                const response = await fetch(
+                    `/api/forecast-intelligence?lat=${encodeURIComponent(data.latitude)}&lon=${encodeURIComponent(data.longitude)}`
+                );
+
+                const intel = await response.json();
+
+                if (!response.ok || intel.error) {
+                    throw new Error(intel.error || 'Forecast intelligence unavailable');
+                }
+
+                confidence.textContent = intel.confidence || '--';
+                confidenceNote.textContent =
+                    intel.confidence_note || 'Model uncertainty estimate';
+
+                confidence.classList.remove(
+                    'ensemble-confidence-high',
+                    'ensemble-confidence-moderate',
+                    'ensemble-confidence-lower'
+                );
+
+                if (intel.confidence === 'High') {
+                    confidence.classList.add('ensemble-confidence-high');
+                } else if (intel.confidence === 'Moderate') {
+                    confidence.classList.add('ensemble-confidence-moderate');
+                } else {
+                    confidence.classList.add('ensemble-confidence-lower');
+                }
+
+                spread.textContent =
+                    Number.isFinite(Number(intel.mean_temperature_spread))
+                        ? Number(intel.mean_temperature_spread).toFixed(1)
+                        : '--';
+
+                rain.textContent =
+                    Number.isFinite(Number(intel.peak_ensemble_rain_probability))
+                        ? Math.round(Number(intel.peak_ensemble_rain_probability))
+                        : '--';
+
+                const low = Number(intel.temperature_p10);
+                const high = Number(intel.temperature_p90);
+
+                range.textContent =
+                    Number.isFinite(low) && Number.isFinite(high)
+                        ? `${low.toFixed(0)}°–${high.toFixed(0)}°C`
+                        : '--';
+
+                card.animate(
+                    [
+                        { opacity: .65, transform: 'translateY(5px)' },
+                        { opacity: 1, transform: 'translateY(0)' }
+                    ],
+                    {
+                        duration: 420,
+                        easing: 'cubic-bezier(.22,1,.36,1)'
+                    }
+                );
+
+            } catch (error) {
+                console.warn('Forecast intelligence:', error);
+
+                badge.textContent = 'Guidance unavailable';
+                confidence.textContent = '--';
+                confidenceNote.textContent = 'Unable to retrieve ensemble guidance';
+                spread.textContent = '--';
+                rain.textContent = '--';
+                range.textContent = '--';
+            }
+        }
+
         function updateDashboard(data) {
             document.getElementById('locationDisplay').innerText = `📍 ${data.city}`;
             const updateTime = document.getElementById('updateTime');
@@ -2537,6 +2826,10 @@
             updateTrendChart(data.forecast);
             renderModernForecast(data.forecast);
             renderModernInsights(data);
+
+            // Fetch probabilistic ensemble guidance separately.
+            // This does not consume Groq/Gemini chatbot quota.
+            loadForecastIntelligence(data);
         }
     </script>
 </body>
