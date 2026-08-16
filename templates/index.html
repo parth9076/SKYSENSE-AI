@@ -2155,6 +2155,89 @@
             }
         }
 
+
+        /* =========================================================
+           LOCATION SEARCH — VERTICAL DROPDOWN
+           ========================================================= */
+        #suggestions,
+        #suggestionsBox,
+        .suggestions-box {
+            display: none;
+            flex-direction: column !important;
+            flex-wrap: nowrap !important;
+            align-items: stretch !important;
+            position: absolute !important;
+            top: calc(100% + 8px) !important;
+            left: 0 !important;
+            right: 0 !important;
+            width: 100% !important;
+            max-height: 320px !important;
+            overflow-y: auto !important;
+            overflow-x: hidden !important;
+            z-index: 9999 !important;
+            padding: 6px !important;
+            gap: 2px !important;
+            box-sizing: border-box !important;
+            border-radius: 12px !important;
+            background: rgba(13, 27, 46, 0.98) !important;
+            border: 1px solid rgba(96, 165, 250, 0.16) !important;
+            box-shadow: 0 18px 45px rgba(0, 0, 0, 0.38) !important;
+            backdrop-filter: blur(16px) !important;
+        }
+
+        #suggestions .suggestion-item,
+        #suggestionsBox .suggestion-item,
+        .suggestions-box .suggestion-item,
+        .suggestion-item {
+            display: block !important;
+            flex: 0 0 auto !important;
+            width: 100% !important;
+            min-width: 0 !important;
+            box-sizing: border-box !important;
+            padding: 11px 13px !important;
+            margin: 0 !important;
+            text-align: left !important;
+            white-space: normal !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            line-height: 1.35 !important;
+            cursor: pointer !important;
+            border-radius: 8px !important;
+            color: #F8FAFC !important;
+            background: transparent !important;
+        }
+
+        .suggestion-item:hover,
+        .suggestion-item:focus {
+            background: rgba(59, 130, 246, 0.16) !important;
+            color: #FFFFFF !important;
+        }
+
+        @media (max-width: 768px) {
+            #suggestions,
+            #suggestionsBox,
+            .suggestions-box {
+                max-height: 260px !important;
+            }
+
+            .suggestion-item {
+                padding: 12px !important;
+            }
+        }
+
+
+        #suggestions,
+        #suggestionsBox,
+        .suggestions-box {
+            scrollbar-width: thin;
+        }
+
+        .search-container,
+        .location-search,
+        .search-wrapper {
+            position: relative !important;
+        }
+
 </style>
 </head>
 <body>
@@ -2752,6 +2835,26 @@
                 async function(position) {
                     const lat = position.coords.latitude;
                     const lon = position.coords.longitude;
+                    const accuracy = Number(position.coords.accuracy);
+
+                    console.log(
+                        `SkySense GPS: ${lat}, ${lon} | accuracy: ${accuracy}m`
+                    );
+
+                    // Desktop browsers can sometimes return an IP/Wi-Fi
+                    // location several kilometres away. If the reported
+                    // accuracy is poor, prefer the user's configured home
+                    // location instead of showing a misleading city.
+                    if (
+                        !Number.isFinite(accuracy) ||
+                        accuracy > 10000
+                    ) {
+                        console.warn(
+                            'Low-accuracy location. Using the default city.'
+                        );
+                        getWeatherByName(DEFAULT_CITY);
+                        return;
+                    }
 
                     try {
                         const geoRes = await fetch(
@@ -2776,50 +2879,41 @@
                             address.suburb ||
                             address.neighbourhood ||
                             address.residential ||
-                            address.city_district;
+                            address.village;
 
                         const city =
                             address.city ||
                             address.town ||
-                            address.village ||
                             address.municipality ||
                             address.county;
 
-                        let preciseLocationName =
-                            city || DEFAULT_CITY;
+                        const state =
+                            address.state || '';
+
+                        let locationName = city || DEFAULT_CITY;
 
                         if (neighborhood && city) {
-                            preciseLocationName =
-                                `${neighborhood}, ${city}`;
-                        } else if (neighborhood) {
-                            preciseLocationName = neighborhood;
+                            locationName = `${neighborhood}, ${city}`;
                         }
 
-                        // Save exact coordinates so a temporary location
-                        // permission/geolocation failure does not switch
-                        // the user to Pune or another unrelated city.
                         try {
-                            localStorage.setItem(
-                                'skysense_last_location',
-                                JSON.stringify({
-                                    lat,
-                                    lon,
-                                    name: preciseLocationName,
-                                    savedAt: Date.now()
-                                })
-                            );
-                        } catch (err) {
-                            console.warn(
-                                'Could not save location:',
-                                err
+                                localStorage.setItem(
+                                    'skysense_last_location',
+                                    JSON.stringify({
+                                        lat,
+                                        lon,
+                                        name: locationName,
+                                        savedAt: Date.now()
+                                    })
+                                );
+                            } catch (_) {}
+
+                            getWeatherByCoords(
+                                lat,
+                                lon,
+                                locationName
                             );
                         }
-
-                        getWeatherByCoords(
-                            lat,
-                            lon,
-                            preciseLocationName
-                        );
 
                     } catch (err) {
                         console.warn(
@@ -2827,20 +2921,8 @@
                             err
                         );
 
-                        // GPS coordinates are still authoritative even if
-                        // reverse geocoding fails.
-                        try {
-                            localStorage.setItem(
-                                'skysense_last_location',
-                                JSON.stringify({
-                                    lat,
-                                    lon,
-                                    name: DEFAULT_CITY,
-                                    savedAt: Date.now()
-                                })
-                            );
-                        } catch (_) {}
-
+                        // GPS coordinates remain usable even if Nominatim
+                        // is temporarily unavailable.
                         getWeatherByCoords(
                             lat,
                             lon,
@@ -2856,14 +2938,13 @@
                         error.message
                     );
 
-                    // IMPORTANT: no more getWeatherByName('Pune').
                     if (!useLastKnownLocation()) {
                         getWeatherByName(DEFAULT_CITY);
                     }
                 },
 
                 options
-            );
+            )
         }
 
         function switchTab(tabName) {
