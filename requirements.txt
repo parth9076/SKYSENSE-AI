@@ -1,5 +1,5 @@
 Flask
 requests
 python-dotenv
-google-genai
+groq
 gunicorn
