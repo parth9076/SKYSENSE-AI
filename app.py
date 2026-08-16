@@ -652,7 +652,10 @@ def weather():
                         item['main']['temp'] - 3
                     ),
 
-                    "description": desc
+                    "description": desc,
+
+                    # Probability of precipitation for this forecast point
+                    "pop": pop
                 })
 
     # ======================================================
