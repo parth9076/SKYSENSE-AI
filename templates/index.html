@@ -2298,7 +2298,7 @@
                         Multi-model numerical weather guidance
                     </div>
                 </div>
-                <div class="ensemble-badge" id="ensembleBadge">Loading…</div>
+                <div class="ensemble-badge" id="ensembleBadge">Checking ECMWF • GFS • ICON…</div>
             </div>
 
             <div class="ensemble-grid">
@@ -2870,13 +2870,13 @@
             const range = document.getElementById('ensembleRange');
 
             try {
-                badge.textContent = `Multi-model • ${intel.model_count || 0} models`;
-
                 const response = await fetch(
                     `/api/forecast-intelligence?lat=${encodeURIComponent(data.latitude)}&lon=${encodeURIComponent(data.longitude)}`
                 );
 
                 const intel = await response.json();
+
+                badge.textContent = `Multi-model • ${intel.model_count || 0} models`;
 
                 if (!response.ok || intel.error) {
                     throw new Error(intel.error || 'Forecast intelligence unavailable');
@@ -2963,9 +2963,13 @@
 
                 badge.textContent = 'Guidance unavailable';
                 confidence.textContent = '--';
-                confidenceNote.textContent = 'Unable to retrieve model guidance';
+                confidenceNote.textContent =
+                    error?.message || 'Unable to retrieve model guidance';
+
                 if (agreement) agreement.textContent = '--';
                 if (modelNames) modelNames.textContent = 'ECMWF • GFS • ICON';
+                if (peakDisagreement) peakDisagreement.textContent = '--';
+
                 spread.textContent = '--';
                 rain.textContent = '--';
                 range.textContent = '--';
