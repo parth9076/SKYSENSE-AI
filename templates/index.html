@@ -1352,7 +1352,7 @@
             }
         }
 
-    </style>
+\n        /* SKY SENSE POLISH: restrained motion, depth, accessibility */\n        :root { --sky-ease: cubic-bezier(.22,1,.36,1); }\n        html { scroll-behavior: smooth; -webkit-tap-highlight-color: transparent; }\n        body { overscroll-behavior-x: none; }\n        .card,.forecast-card,.rain-slot,.glance-box,.stat-pill,.activity-item {\n            transition: transform .28s var(--sky-ease), border-color .28s ease, background .28s ease, box-shadow .28s ease;\n        }\n        .card:hover { border-color: rgba(96,165,250,.16); box-shadow: 0 14px 36px rgba(0,0,0,.14); }\n        .forecast-card:hover,.rain-slot:hover,.glance-box:hover,.stat-pill:hover { transform: translateY(-3px); border-color: rgba(96,165,250,.22); background: rgba(255,255,255,.045); }\n        .activity-item:hover { transform: translateX(3px); border-color: rgba(96,165,250,.18); }\n        :where(button,input,.nav-links div,.suggestion-chip):focus-visible { outline:2px solid #60a5fa; outline-offset:3px; }\n        #loading { position:fixed; inset:0; z-index:3000; display:none; align-items:center; justify-content:center; padding:24px; background:rgba(4,10,24,.58); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); color:#cbd5e1; font-size:.88rem; }\n        #loading::before { content:""; width:22px; height:22px; margin-right:12px; border:2px solid rgba(255,255,255,.16); border-top-color:#60a5fa; border-radius:50%; animation:skySpin .8s linear infinite; }\n        @keyframes skySpin { to { transform:rotate(360deg); } }\n        .view-section.active-view { animation:skyViewIn .38s var(--sky-ease) both; }\n        @keyframes skyViewIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }\n        .forecast-card,.rain-slot,.detailed-day-card,.activity-item { animation:skyItemIn .45s var(--sky-ease) both; }\n        @keyframes skyItemIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }\n        .update-time { display:flex; align-items:center; gap:7px; }\n        .update-time::before { content:""; width:6px; height:6px; flex:0 0 6px; border-radius:50%; background:#34d399; box-shadow:0 0 0 4px rgba(52,211,153,.08); animation:skyPulse 2.2s ease-in-out infinite; }\n        @keyframes skyPulse { 0%,100%{opacity:.55;transform:scale(.9)} 50%{opacity:1;transform:scale(1)} }\n        .chart-container canvas { display:block; max-width:100%; }\n        @media (max-width:480px) { .card:hover,.forecast-card:hover,.rain-slot:hover,.glance-box:hover,.stat-pill:hover,.activity-item:hover { transform:none; } #loading { font-size:.8rem; text-align:center; } }\n        @media (prefers-reduced-motion:reduce) { html{scroll-behavior:auto} *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important} }\n    </style>
 </head>
 <body>
 
@@ -1381,7 +1381,7 @@
             <div style="display: flex; flex-direction: column; gap: 20px;">
                 <div class="card">
                     <div class="location-title" id="locationDisplay">📍 Detecting Location...</div>
-                    <div class="update-time">Updated just now</div>
+                    <div class="update-time" id="updateTime">Updated just now</div>
                     <div class="main-temp-display">
                         <div class="temp-value" id="tempDisplay">--°</div>
                         <div><div class="temp-condition" id="descDisplay">--</div><div class="temp-feels" id="feelsDisplay">--</div></div>
@@ -1431,7 +1431,7 @@
                 <div class="card">
                     <div class="section-header">⏱️ Today At A Glance</div>
                     <div class="glance-grid">
-                        <div class="glance-box"><div class="glance-lbl">Chance of Rain</div><div class="glance-val" id="rainDisplay" style="color: #60a5fa;">--</div></div>
+                        <div class="glance-box"><div class="glance-lbl">Peak Rain (24h)</div><div class="glance-val" id="rainDisplay" style="color: #60a5fa;">--</div></div>
                         <div class="glance-box"><div class="glance-lbl">Air Quality (AQI)</div><div class="glance-val" id="aqiDisplay">--</div></div>
                         <div class="glance-box"><div class="glance-lbl">Sunrise</div><div class="glance-val" id="sunriseDisplay">--:--</div></div>
                         <div class="glance-box"><div class="glance-lbl">Sunset</div><div class="glance-val" id="sunsetDisplay">--:--</div></div>
@@ -1605,7 +1605,7 @@
                             };
                             suggestionsBox.appendChild(div);
                         });
-                        suggestionsBox.style.display = 'block';
+                        suggestionsBox.style.display = 'flex';
                     } else {
                         suggestionsBox.style.display = 'none';
                     }
@@ -1630,12 +1630,12 @@
 
         async function getWeatherByName(query) {
             if (!query) return;
-            document.getElementById('loading').style.display = 'block';
+            document.getElementById('loading').style.display = 'flex';
             try {
                 const response = await fetch(`/api/weather?city=${encodeURIComponent(query)}`);
                 const data = await response.json();
                 if (data.error) {
-                    alert(data.error);
+                    console.error(data.error);
                 } else {
                     updateDashboard(data);
                 }
@@ -1647,12 +1647,12 @@
         }
 
         async function getWeatherByCoords(lat, lon, displayName) {
-            document.getElementById('loading').style.display = 'block';
+            document.getElementById('loading').style.display = 'flex';
             try {
                 const response = await fetch(`/api/weather?lat=${lat}&lon=${lon}&city=${encodeURIComponent(displayName)}`);
                 const data = await response.json();
                 if (data.error) {
-                    alert(data.error);
+                    console.error(data.error);
                 } else {
                     updateDashboard(data);
                 }
@@ -1715,7 +1715,7 @@
         // High-Precision Geolocation Tracking Function
         function detectUserLocation() {
             if (navigator.geolocation) {
-                document.getElementById('loading').style.display = 'block';
+                document.getElementById('loading').style.display = 'flex';
                 
                 const options = {
                     enableHighAccuracy: true,
@@ -1788,7 +1788,7 @@
                         borderWidth: 2, pointBackgroundColor: '#ffffff', pointBorderColor: '#3b82f6', pointRadius: 4, fill: true, tension: 0.4
                     }]
                 },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+                options: { responsive: true, maintainAspectRatio: false, animation: { duration: 650, easing: 'easeOutQuart' }, plugins: { legend: { display: false } },
                     scales: { y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } }, x: { grid: { display: false }, ticks: { color: '#94a3b8' } } }
                 }
             });
@@ -1939,6 +1939,8 @@
 
         function updateDashboard(data) {
             document.getElementById('locationDisplay').innerText = `📍 ${data.city}`;
+            const updateTime = document.getElementById('updateTime');
+            if (updateTime) updateTime.innerText = `Updated ${new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}`;
             document.getElementById('chatCityName').innerText = data.city;
             document.getElementById('tempDisplay').innerText = Math.round(data.temperature) + '°';
             document.getElementById('descDisplay').innerText = data.description;
@@ -1988,7 +1990,8 @@
             data.forecast.slice(0, 5).forEach((day, index) => {
                 const card = document.createElement('div');
                 card.className = 'forecast-card';
-                card.innerHTML = `<div class="f-day">${index === 0 ? 'Today' : day.day}</div><div class="f-date">${day.date}</div><div style="font-size: 1.2rem; margin: 10px 0;">🌤️</div><div class="f-temps"><span class="f-high">${day.temp}°</span><span class="f-low">${day.min_temp}°</span></div>`;
+                const rain = Number.isFinite(Number(day.pop)) ? Math.max(0, Math.min(100, Number(day.pop))) : 0;
+                card.innerHTML = `<div class="f-day">${index === 0 ? 'Today' : day.day}</div><div class="f-date">${day.date}</div><div style="font-size:1.2rem;margin:10px 0;">🌤️</div><div class="f-temps"><span class="f-high">${day.temp}°</span><span class="f-low">${day.min_temp}°</span></div><div style="margin-top:8px;color:#60a5fa;font-size:.72rem;font-weight:600;">💧 ${rain}% rain</div>`;
                 forecastRow.appendChild(card);
                 
                 const row = document.createElement('div');
@@ -2038,7 +2041,7 @@
 
                     <div class="dd-rain">
                         <div class="dd-rain-top">
-                            <span class="dd-rain-label">💧 Rain probability</span>
+                            <span class="dd-rain-label">💧 Peak rain chance</span>
                             <span class="dd-rain-value">${rain}%</span>
                         </div>
                         <div class="dd-rain-track">
