@@ -1392,7 +1392,398 @@
           .activity-score-grid{grid-template-columns:minmax(0,1fr);}.ask-insight-btn{width:100%;}.chat-window{left:8px;right:8px;bottom:calc(72px + env(safe-area-inset-bottom));height:min(68dvh,540px);}
         }
         @media(max-width:360px){body{padding:7px;}.card{padding:12px;}.modern-forecast-card{flex-basis:138px;min-width:138px;}}
-    </style>
+    
+        /* =========================================================
+           SKY SENSE MOTION SYSTEM
+           Smooth UI animations + premium loading experience
+           ========================================================= */
+
+        :root {
+            --sky-ease: cubic-bezier(.22, 1, .36, 1);
+        }
+
+        /* Page entrance */
+        body {
+            animation: skyBodyIn .7s var(--sky-ease) both;
+        }
+
+        @keyframes skyBodyIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Header */
+        header {
+            animation: skyHeaderIn .65s var(--sky-ease) both;
+        }
+
+        @keyframes skyHeaderIn {
+            from {
+                opacity: 0;
+                transform: translateY(-12px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .logo-area {
+            transition: transform .3s var(--sky-ease);
+        }
+
+        .logo-area:hover {
+            transform: translateY(-2px);
+        }
+
+        /* Cards */
+        .card {
+            transition:
+                transform .35s var(--sky-ease),
+                border-color .35s ease,
+                box-shadow .35s ease,
+                background .35s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 16px 40px rgba(0,0,0,.18);
+        }
+
+        /* Weather stat cards */
+        .stat-pill,
+        .glance-box,
+        .rain-slot,
+        .forecast-card,
+        .activity-item {
+            animation: skyCardIn .55s var(--sky-ease) both;
+        }
+
+        @keyframes skyCardIn {
+            from {
+                opacity: 0;
+                transform: translateY(12px) scale(.98);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        /* Stagger animation */
+        .micro-stats .stat-pill:nth-child(1) { animation-delay: .05s; }
+        .micro-stats .stat-pill:nth-child(2) { animation-delay: .10s; }
+        .micro-stats .stat-pill:nth-child(3) { animation-delay: .15s; }
+        .micro-stats .stat-pill:nth-child(4) { animation-delay: .20s; }
+
+        .glance-grid .glance-box:nth-child(1) { animation-delay: .05s; }
+        .glance-grid .glance-box:nth-child(2) { animation-delay: .10s; }
+        .glance-grid .glance-box:nth-child(3) { animation-delay: .15s; }
+        .glance-grid .glance-box:nth-child(4) { animation-delay: .20s; }
+
+        /* Main temperature */
+        .temp-value {
+            animation: skyTempReveal .8s var(--sky-ease) both;
+        }
+
+        @keyframes skyTempReveal {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Weather insight shimmer */
+        .ai-text,
+        .ai-reading {
+            animation: skyTextIn .7s var(--sky-ease) both;
+        }
+
+        @keyframes skyTextIn {
+            from {
+                opacity: 0;
+                transform: translateY(7px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Modern forecast cards */
+        .modern-forecast-card {
+            transition:
+                transform .3s var(--sky-ease),
+                border-color .3s ease,
+                box-shadow .3s ease,
+                background .3s ease;
+        }
+
+        .modern-forecast-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 30px rgba(0,0,0,.18);
+        }
+
+        .modern-forecast-card.selected {
+            animation: skySelected .35s var(--sky-ease) both;
+        }
+
+        @keyframes skySelected {
+            from { transform: scale(.98); }
+            to { transform: scale(1); }
+        }
+
+        .mf-icon,
+        .dd-icon {
+            transition: transform .35s var(--sky-ease);
+        }
+
+        .modern-forecast-card:hover .mf-icon,
+        .detailed-day-card:hover .dd-icon {
+            transform: scale(1.12) rotate(-3deg);
+        }
+
+        /* Progress bars animate when data appears */
+        .range-track span,
+        .rain-meter span,
+        .mf-rainbar span,
+        .dd-temp-track span,
+        .dd-rain-track span,
+        .score-bar span {
+            animation: skyBarGrow .9s var(--sky-ease) both;
+            transform-origin: left center;
+        }
+
+        @keyframes skyBarGrow {
+            from {
+                transform: scaleX(0);
+                opacity: .4;
+            }
+            to {
+                transform: scaleX(1);
+                opacity: 1;
+            }
+        }
+
+        /* Forecast detailed rows */
+        .detailed-day-card {
+            animation: skyRowIn .5s var(--sky-ease) both;
+        }
+
+        .detailed-day-card:nth-child(1) { animation-delay: .04s; }
+        .detailed-day-card:nth-child(2) { animation-delay: .08s; }
+        .detailed-day-card:nth-child(3) { animation-delay: .12s; }
+        .detailed-day-card:nth-child(4) { animation-delay: .16s; }
+        .detailed-day-card:nth-child(5) { animation-delay: .20s; }
+
+        @keyframes skyRowIn {
+            from {
+                opacity: 0;
+                transform: translateX(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        /* AI Insights */
+        .insight-hero {
+            animation: skyHeroIn .65s var(--sky-ease) both;
+        }
+
+        .insight-card {
+            animation: skyInsightIn .55s var(--sky-ease) both;
+        }
+
+        .insight-grid .insight-card:nth-child(1) { animation-delay: .05s; }
+        .insight-grid .insight-card:nth-child(2) { animation-delay: .10s; }
+        .insight-grid .insight-card:nth-child(3) { animation-delay: .15s; }
+        .insight-grid .insight-card:nth-child(4) { animation-delay: .20s; }
+        .insight-grid .insight-card:nth-child(5) { animation-delay: .25s; }
+
+        @keyframes skyHeroIn {
+            from {
+                opacity: 0;
+                transform: translateY(14px) scale(.985);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        @keyframes skyInsightIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .insight-hero-icon {
+            animation: skyIconFloat 3s ease-in-out infinite;
+        }
+
+        @keyframes skyIconFloat {
+            0%, 100% { transform: translateY(0) rotate(0); }
+            50% { transform: translateY(-4px) rotate(2deg); }
+        }
+
+        /* Chat button */
+        .chat-btn {
+            transition:
+                transform .3s var(--sky-ease),
+                box-shadow .3s ease;
+            animation: skyChatPulse 2.8s ease-in-out infinite;
+        }
+
+        .chat-btn:hover {
+            transform: scale(1.08);
+            box-shadow: 0 8px 30px rgba(59,130,246,.35);
+        }
+
+        @keyframes skyChatPulse {
+            0%, 100% {
+                box-shadow: 0 4px 20px rgba(0,0,0,.4);
+            }
+            50% {
+                box-shadow: 0 6px 28px rgba(59,130,246,.25);
+            }
+        }
+
+        .chat-window {
+            transform-origin: bottom right;
+        }
+
+        .chat-window[style*="display: flex"] {
+            animation: skyChatOpen .3s var(--sky-ease) both;
+        }
+
+        @keyframes skyChatOpen {
+            from {
+                opacity: 0;
+                transform: translateY(12px) scale(.96);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .msg {
+            animation: skyMessageIn .3s var(--sky-ease) both;
+        }
+
+        @keyframes skyMessageIn {
+            from {
+                opacity: 0;
+                transform: translateY(6px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Premium loading overlay */
+        #loading {
+            display: none;
+            flex-direction: column;
+            gap: 12px;
+            text-align: center;
+            background:
+                radial-gradient(circle at 50% 35%, rgba(59,130,246,.15), transparent 32%),
+                rgba(4,10,24,.78);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+        }
+
+        #loading::before {
+            content: "";
+            width: 48px;
+            height: 48px;
+            margin: 0;
+            border: 2px solid rgba(255,255,255,.10);
+            border-top-color: #60a5fa;
+            border-right-color: #38bdf8;
+            border-radius: 50%;
+            animation: skyLoaderSpin 1s linear infinite;
+        }
+
+        #loading::after {
+            content: "SKYSENSE AI";
+            display: block;
+            color: #60a5fa;
+            font-size: .65rem;
+            font-weight: 700;
+            letter-spacing: .22em;
+            animation: skyLoaderText 1.5s ease-in-out infinite;
+        }
+
+        @keyframes skyLoaderSpin {
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes skyLoaderText {
+            0%, 100% { opacity: .45; }
+            50% { opacity: 1; }
+        }
+
+        /* Loading text itself */
+        #loading {
+            font-size: .88rem;
+            color: #cbd5e1;
+        }
+
+        /* Smooth tab switching */
+        .view-section.active-view {
+            animation: skyViewEnter .42s var(--sky-ease) both;
+        }
+
+        @keyframes skyViewEnter {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Respect accessibility settings */
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                animation-duration: .001ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: .001ms !important;
+                scroll-behavior: auto !important;
+            }
+        }
+
+        /* On small screens keep animation subtle */
+        @media (max-width: 480px) {
+            .card:hover,
+            .modern-forecast-card:hover {
+                transform: none;
+            }
+
+            .chat-btn {
+                animation-duration: 3.5s;
+            }
+        }
+
+</style>
 </head>
 <body>
 
@@ -1413,7 +1804,9 @@
         </div>
     </header>
 
-    <div id="loading">Detecting high-precision location & fetching telemetry...</div>
+    <div id="loading">
+        <div id="loadingMessage">Detecting high-precision location &amp; fetching telemetry...</div>
+    </div>
 
     <div id="view-dashboard" class="view-section active-view">
         <div class="dashboard-grid">
@@ -1616,6 +2009,53 @@
         const cityInput = document.getElementById('cityInput');
         const suggestionsBox = document.getElementById('suggestionsBox');
         let debounceTimer;
+        const loadingMessages = [
+            "Detecting your location...",
+            "Fetching live weather data...",
+            "Analyzing atmospheric conditions...",
+            "Preparing your forecast...",
+            "Calculating AI weather insights..."
+        ];
+        let loadingMessageTimer = null;
+        let loadingMessageIndex = 0;
+
+        function showLoading(message) {
+            const loader = document.getElementById('loading');
+            const text = document.getElementById('loadingMessage');
+
+            if (!loader) return;
+
+            loadingMessageIndex = 0;
+            if (text) text.textContent = message || loadingMessages[0];
+
+            loader.style.display = 'flex';
+
+            clearInterval(loadingMessageTimer);
+            loadingMessageTimer = setInterval(() => {
+                if (!text) return;
+                loadingMessageIndex =
+                    (loadingMessageIndex + 1) % loadingMessages.length;
+                text.textContent = loadingMessages[loadingMessageIndex];
+            }, 1100);
+        }
+
+        function hideLoading() {
+            clearInterval(loadingMessageTimer);
+            loadingMessageTimer = null;
+
+            const loader = document.getElementById('loading');
+            if (!loader) return;
+
+            loader.style.opacity = '0';
+            loader.style.transition = 'opacity .25s ease';
+
+            setTimeout(() => {
+                loader.style.display = 'none';
+                loader.style.opacity = '';
+            }, 250);
+        }
+
+
 
         cityInput.addEventListener('input', function() {
             clearTimeout(debounceTimer);
@@ -1670,7 +2110,7 @@
 
         async function getWeatherByName(query) {
             if (!query) return;
-            document.getElementById('loading').style.display = 'flex';
+            showLoading();
             try {
                 const response = await fetch(`/api/weather?city=${encodeURIComponent(query)}`);
                 const data = await response.json();
@@ -1682,12 +2122,12 @@
             } catch (error) {
                 alert('Connection error.');
             } finally {
-                document.getElementById('loading').style.display = 'none';
+                hideLoading();
             }
         }
 
         async function getWeatherByCoords(lat, lon, displayName) {
-            document.getElementById('loading').style.display = 'flex';
+            showLoading();
             try {
                 const response = await fetch(`/api/weather?lat=${lat}&lon=${lon}&city=${encodeURIComponent(displayName)}`);
                 const data = await response.json();
@@ -1699,7 +2139,7 @@
             } catch (error) {
                 alert('Connection error.');
             } finally {
-                document.getElementById('loading').style.display = 'none';
+                hideLoading();
             }
         }
 
@@ -1755,7 +2195,7 @@
         // High-Precision Geolocation Tracking Function
         function detectUserLocation() {
             if (navigator.geolocation) {
-                document.getElementById('loading').style.display = 'flex';
+                showLoading();
                 
                 const options = {
                     enableHighAccuracy: true,
