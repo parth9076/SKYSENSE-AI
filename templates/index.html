@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <meta name="theme-color" content="#071426">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SkySense AI - Professional Weather Dashboard</title>
@@ -1930,6 +1931,227 @@
 
             .ensemble-explainer {
                 padding: 12px;
+            }
+        }
+
+
+        /* =========================================================
+           SKYSENSE FINAL COLOR SYSTEM
+           Deep Navy → Card Navy → Blue/Cyan → White
+           ========================================================= */
+
+        :root {
+            --sky-bg: #071426;
+            --sky-card: #0D1B2E;
+            --sky-card-2: #10243A;
+            --sky-blue: #3B82F6;
+            --sky-blue-light: #60A5FA;
+            --sky-cyan: #38BDF8;
+            --sky-white: #F8FAFC;
+            --sky-muted: #94A3B8;
+            --sky-good: #4ADE80;
+            --sky-warning: #FBBF24;
+            --sky-danger: #FB7185;
+        }
+
+        html {
+            background: var(--sky-bg) !important;
+        }
+
+        body {
+            background:
+                radial-gradient(circle at 12% 0%, rgba(59,130,246,.07), transparent 30%),
+                radial-gradient(circle at 88% 12%, rgba(56,189,248,.045), transparent 28%),
+                var(--sky-bg) !important;
+            color: var(--sky-white) !important;
+        }
+
+        header,
+        .header,
+        .topbar {
+            background: rgba(7,20,38,.92) !important;
+            border-color: rgba(96,165,250,.10) !important;
+        }
+
+        .card,
+        .forecast-card,
+        .modern-forecast-card,
+        .detailed-day-card,
+        .insight-card,
+        .forecast-highlight,
+        .ensemble-metric,
+        .glance-box,
+        .stat-pill,
+        .rain-slot,
+        .activity-item,
+        .forecast-intelligence-card {
+            background: linear-gradient(
+                145deg,
+                rgba(13,27,46,.96),
+                rgba(16,36,58,.78)
+            ) !important;
+            border-color: rgba(96,165,250,.10) !important;
+        }
+
+        .card:hover,
+        .modern-forecast-card:hover,
+        .detailed-day-card:hover {
+            border-color: rgba(59,130,246,.28) !important;
+            box-shadow: 0 16px 40px rgba(0,0,0,.22) !important;
+        }
+
+        /* Primary information */
+        .temp-value,
+        .f-high,
+        .dd-high,
+        .ensemble-value,
+        .glance-val,
+        .stat-val {
+            color: var(--sky-white) !important;
+        }
+
+        /* Secondary information */
+        .f-date,
+        .dd-date,
+        .dd-condition-sub,
+        .ensemble-sub,
+        .ensemble-label,
+        .dd-rain-label,
+        .dd-rain-caption,
+        .mini-caption,
+        .glance-label,
+        .stat-label {
+            color: var(--sky-muted) !important;
+        }
+
+        /* Blue / cyan emphasis */
+        .f-day,
+        .dd-day-name,
+        .dd-rain-value,
+        .rain-value,
+        .mf-rain,
+        .section-header,
+        .ai-title,
+        .ai-icon,
+        .ensemble-badge {
+            color: var(--sky-blue-light) !important;
+        }
+
+        .rain-track span,
+        .dd-rain-track span,
+        .mf-rainbar span,
+        .range-track span,
+        .dd-temp-track span,
+        .score-bar span {
+            background: linear-gradient(
+                90deg,
+                var(--sky-cyan),
+                var(--sky-blue)
+            ) !important;
+        }
+
+        .forecast-status,
+        .ai-status,
+        .live-badge,
+        .ensemble-badge,
+        .dd-today-badge {
+            background: rgba(59,130,246,.10) !important;
+            border-color: rgba(96,165,250,.18) !important;
+            color: #93C5FD !important;
+        }
+
+        /* AI section */
+        .insight-hero,
+        .ai-reading,
+        .travel-modern,
+        .ai-text {
+            background:
+                linear-gradient(
+                    135deg,
+                    rgba(59,130,246,.10),
+                    rgba(56,189,248,.035)
+                ) !important;
+            border-color: rgba(96,165,250,.14) !important;
+        }
+
+        /* Interactive controls */
+        button,
+        .location-btn,
+        .ask-insight-btn,
+        .search-btn {
+            transition:
+                background .25s ease,
+                border-color .25s ease,
+                transform .25s ease,
+                box-shadow .25s ease;
+        }
+
+        button:hover,
+        .ask-insight-btn:hover,
+        .search-btn:hover {
+            border-color: rgba(96,165,250,.35) !important;
+        }
+
+        /* Status colors */
+        .ensemble-confidence-high {
+            color: var(--sky-good) !important;
+        }
+
+        .ensemble-confidence-moderate {
+            color: var(--sky-warning) !important;
+        }
+
+        .ensemble-confidence-lower {
+            color: var(--sky-danger) !important;
+        }
+
+        /* Loading screen */
+        #loading {
+            background:
+                radial-gradient(
+                    circle at 50% 35%,
+                    rgba(59,130,246,.16),
+                    transparent 34%
+                ),
+                rgba(7,20,38,.90) !important;
+        }
+
+        #loading::before {
+            border-color: rgba(255,255,255,.10) !important;
+            border-top-color: var(--sky-blue-light) !important;
+            border-right-color: var(--sky-cyan) !important;
+        }
+
+        #loading::after {
+            color: var(--sky-blue-light) !important;
+        }
+
+        /* Chat */
+        .chat-window,
+        .chat-header,
+        .chat-input-area {
+            background: var(--sky-card) !important;
+            border-color: rgba(96,165,250,.12) !important;
+        }
+
+        .chat-btn {
+            background: linear-gradient(
+                135deg,
+                var(--sky-blue),
+                #2563EB
+            ) !important;
+        }
+
+        /* Mobile keeps the same hierarchy */
+        @media (max-width: 768px) {
+            body {
+                background:
+                    radial-gradient(
+                        circle at 50% -5%,
+                        rgba(59,130,246,.08),
+                        transparent 34%
+                    ),
+                    var(--sky-bg) !important;
             }
         }
 
