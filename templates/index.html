@@ -78,7 +78,7 @@
         .glance-box { background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 12px; }
         .glance-lbl { font-size: 0.75rem; color: #64748b; margin-bottom: 8px; text-transform: uppercase; }
         .glance-val { font-size: 1.1rem; font-weight: 600; }
-        .chart-container { height: 180px; width: 100%; margin-top: 20px; }
+        .chart-container { height: 180px; width: 100%; margin-top: 20px; position: relative; }
 
         .chat-widget { position: fixed; bottom: 25px; right: 25px; z-index: 1000; display: flex; flex-direction: column; align-items: flex-end; }
         .chat-btn { background: #3b82f6; color: white; border: none; border-radius: 50%; width: 65px; height: 65px; font-size: 28px; cursor: pointer; box-shadow: 0 4px 20px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; transition: transform 0.2s; }
@@ -100,6 +100,468 @@
         .chat-input-area button:hover { background: #2563eb; }
         
         #loading { display: none; text-align: center; padding: 40px; color: #94a3b8; }
+
+        /* =========================================================
+           RESPONSIVE DESIGN - DESKTOP, TABLET, AND ANDROID/iOS
+           ========================================================= */
+
+        html {
+            width: 100%;
+            overflow-x: hidden;
+            -webkit-text-size-adjust: 100%;
+        }
+
+        body {
+            width: 100%;
+            overflow-x: hidden;
+            padding:
+                max(16px, env(safe-area-inset-top))
+                max(16px, env(safe-area-inset-right))
+                max(16px, env(safe-area-inset-bottom))
+                max(16px, env(safe-area-inset-left));
+        }
+
+        button,
+        input {
+            font: inherit;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        button {
+            min-height: 42px;
+        }
+
+        .dashboard-grid {
+            width: 100%;
+        }
+
+        .card {
+            min-width: 0;
+            overflow: hidden;
+        }
+
+        .forecast-card,
+        .rain-slot,
+        .glance-box,
+        .stat-pill {
+            min-width: 0;
+        }
+
+        .chart-container {
+            position: relative;
+        }
+
+        /* Large tablets / smaller laptops */
+        @media (max-width: 1100px) {
+            body {
+                padding-left: 24px;
+                padding-right: 24px;
+            }
+
+            header {
+                flex-wrap: wrap;
+                gap: 16px;
+            }
+
+            .nav-links {
+                order: 3;
+                width: 100%;
+                justify-content: center;
+            }
+
+            .header-right {
+                margin-left: auto;
+            }
+
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Tablets */
+        @media (max-width: 768px) {
+            body {
+                padding: 14px;
+            }
+
+            header {
+                align-items: center;
+                padding-bottom: 12px;
+                margin-bottom: 18px;
+                gap: 12px;
+            }
+
+            .logo-area {
+                font-size: 1.05rem;
+            }
+
+            .nav-links {
+                order: 3;
+                justify-content: flex-start;
+                gap: 0;
+                overflow-x: auto;
+                width: 100%;
+                padding-bottom: 2px;
+                scrollbar-width: none;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .nav-links::-webkit-scrollbar {
+                display: none;
+            }
+
+            .nav-links div {
+                flex: 0 0 auto;
+                padding: 10px 16px 11px;
+                min-height: 42px;
+            }
+
+            .header-right {
+                width: 100%;
+                margin-left: 0;
+                display: grid;
+                grid-template-columns: auto minmax(0, 1fr);
+                gap: 10px;
+            }
+
+            .location-btn {
+                justify-content: center;
+                white-space: nowrap;
+                min-height: 44px;
+            }
+
+            .search-bar-wrapper {
+                width: 100%;
+                min-width: 0;
+            }
+
+            .search-bar-wrapper input {
+                min-height: 44px;
+                font-size: 16px; /* prevents iOS Safari zoom */
+            }
+
+            .dashboard-grid {
+                gap: 14px;
+            }
+
+            .dashboard-grid > div {
+                gap: 14px !important;
+            }
+
+            .card {
+                padding: 18px;
+                border-radius: 14px;
+            }
+
+            .main-temp-display {
+                gap: 10px;
+                flex-wrap: wrap;
+            }
+
+            .temp-value {
+                font-size: clamp(3.2rem, 12vw, 4rem);
+            }
+
+            .temp-condition {
+                font-size: 1.1rem;
+            }
+
+            .micro-stats {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 8px;
+            }
+
+            .rain-timeline {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .forecast-row {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .glance-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+            }
+
+            .chat-widget {
+                right: max(14px, env(safe-area-inset-right));
+                bottom: max(14px, env(safe-area-inset-bottom));
+            }
+
+            .chat-btn {
+                width: 58px;
+                height: 58px;
+                font-size: 24px;
+            }
+
+            .chat-window {
+                width: min(420px, calc(100vw - 28px));
+                height: min(600px, calc(100dvh - 100px));
+                max-height: calc(100dvh - 100px);
+                border-radius: 14px;
+            }
+
+            .chat-input-area {
+                padding-bottom: max(15px, env(safe-area-inset-bottom));
+            }
+
+            #view-forecast .card,
+            #view-insights .card {
+                max-width: none !important;
+            }
+
+            #detailedForecastList > div {
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+        }
+
+        /* Phones */
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+
+            header {
+                margin-bottom: 14px;
+            }
+
+            .logo-area {
+                font-size: 1rem;
+            }
+
+            .header-right {
+                grid-template-columns: 1fr;
+            }
+
+            .location-btn {
+                width: 100%;
+            }
+
+            .nav-links div {
+                padding-left: 13px;
+                padding-right: 13px;
+                font-size: 0.82rem;
+            }
+
+            .card {
+                padding: 15px;
+                border-radius: 12px;
+            }
+
+            .location-title {
+                font-size: 1rem;
+            }
+
+            .update-time {
+                margin-bottom: 14px;
+            }
+
+            .main-temp-display {
+                margin: 12px 0;
+                align-items: center;
+            }
+
+            .temp-value {
+                font-size: 3.4rem;
+            }
+
+            .temp-condition {
+                font-size: 1rem;
+            }
+
+            .temp-feels {
+                font-size: 0.82rem;
+            }
+
+            .micro-stats,
+            .rain-timeline,
+            .forecast-row,
+            .glance-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .stat-pill {
+                padding: 10px 6px;
+            }
+
+            .stat-lbl {
+                font-size: 0.62rem;
+            }
+
+            .stat-val {
+                font-size: 0.85rem;
+                overflow-wrap: anywhere;
+            }
+
+            .section-header {
+                font-size: 0.88rem;
+            }
+
+            .ai-text {
+                font-size: 0.86rem;
+            }
+
+            .activity-item {
+                padding: 11px 12px;
+                font-size: 0.84rem;
+            }
+
+            .activity-item strong {
+                font-size: 0.88rem;
+            }
+
+            .rain-slot {
+                padding: 10px 6px;
+            }
+
+            .rain-time {
+                font-size: 0.68rem;
+            }
+
+            .rain-chance {
+                font-size: 0.92rem;
+            }
+
+            .forecast-card {
+                padding: 12px 8px;
+            }
+
+            .f-day {
+                font-size: 0.82rem;
+            }
+
+            .f-date {
+                font-size: 0.68rem;
+            }
+
+            .glance-box {
+                padding: 12px 10px;
+            }
+
+            .glance-lbl {
+                font-size: 0.65rem;
+            }
+
+            .glance-val {
+                font-size: 0.95rem;
+                overflow-wrap: anywhere;
+            }
+
+            .chart-container {
+                height: 160px;
+                margin-top: 12px;
+            }
+
+            .chat-widget {
+                right: 10px;
+                bottom: max(10px, env(safe-area-inset-bottom));
+            }
+
+            .chat-window {
+                position: fixed;
+                left: 10px;
+                right: 10px;
+                bottom: calc(78px + env(safe-area-inset-bottom));
+                width: auto;
+                height: min(70dvh, 560px);
+                max-height: calc(100dvh - 100px);
+                margin: 0;
+            }
+
+            .chat-messages {
+                padding: 14px;
+            }
+
+            .chat-suggestions {
+                padding: 0 14px 12px;
+                max-height: 88px;
+                overflow-y: auto;
+            }
+
+            .suggestion-chip {
+                font-size: 0.74rem;
+                padding: 7px 10px;
+            }
+
+            .chat-input-area {
+                padding: 10px 12px;
+                gap: 7px;
+            }
+
+            .chat-input-area input {
+                min-width: 0;
+                min-height: 44px;
+                font-size: 16px;
+            }
+
+            .chat-input-area button {
+                min-height: 44px;
+                padding: 0 14px;
+            }
+
+            .msg {
+                max-width: 90%;
+                font-size: 0.84rem;
+            }
+
+            #detailedForecastList > div {
+                display: grid !important;
+                grid-template-columns: 1fr;
+                align-items: start !important;
+            }
+
+            #view-forecast .card,
+            #view-insights .card {
+                padding: 15px;
+            }
+
+            #view-forecast h2,
+            #view-insights h2 {
+                font-size: 1.25rem;
+                margin-bottom: 12px;
+            }
+        }
+
+        /* Very small phones */
+        @media (max-width: 360px) {
+            body {
+                padding: 8px;
+            }
+
+            .card {
+                padding: 13px;
+            }
+
+            .temp-value {
+                font-size: 3rem;
+            }
+
+            .nav-links div {
+                padding-left: 10px;
+                padding-right: 10px;
+                font-size: 0.78rem;
+            }
+
+            .stat-pill,
+            .glance-box {
+                padding-left: 5px;
+                padding-right: 5px;
+            }
+        }
+
+        /* Reduce motion for users who request it */
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                scroll-behavior: auto !important;
+                transition: none !important;
+                animation: none !important;
+            }
+        }
+
     </style>
 </head>
 <body>
@@ -500,7 +962,7 @@
                 forecastRow.appendChild(card);
                 
                 const row = document.createElement('div');
-                row.style.cssText = "display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02); padding: 15px; border-radius: 8px; margin-bottom: 10px;";
+                row.style.cssText = "display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; background: rgba(255,255,255,0.02); padding: 15px; border-radius: 8px; margin-bottom: 10px;";
                 row.innerHTML = `<div><strong>${day.day} (${day.date})</strong></div><div style="color: #94a3b8;">${day.description}</div><div>High: <strong>${day.temp}°C</strong> | Low: ${day.min_temp}°C</div>`;
                 detailedForecastList.appendChild(row);
             });
