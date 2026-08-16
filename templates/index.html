@@ -3,15 +3,30 @@
 <head>
     <meta name="theme-color" content="#071426">
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>SkySense AI - Professional Weather Dashboard</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
-        body { background-color: #0b1329; background-image: radial-gradient(circle at 50% 0%, #172554 0%, #0b1329 70%); color: #ffffff; min-height: 100vh; padding: 20px 40px; }
+        
+        body {
+            background-color: #0b1329;
+            background-image: radial-gradient(circle at 50% 0%, #172554 0%, #0b1329 70%);
+            color: #ffffff;
+            min-height: 100vh;
+            padding: 20px 40px;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
+            touch-action: pan-y;
+        }
 
-        /* ADDED: position: relative and z-index: 2000 to keep header/dropdown above the cards */
+        input, textarea {
+            -webkit-user-select: text;
+            user-select: text;
+        }
+
         header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 15px; margin-bottom: 25px; position: relative; z-index: 2000; }
         .logo-area { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1.15rem; cursor: pointer; }
         .logo-area span { color: #3b82f6; }
@@ -103,2084 +118,104 @@
         
         #loading { display: none; text-align: center; padding: 40px; color: #94a3b8; }
 
-        /* =========================================================
-           RESPONSIVE DESIGN - DESKTOP, TABLET, AND ANDROID/iOS
-           ========================================================= */
-
-        html {
-            width: 100%;
-            overflow-x: hidden;
-            -webkit-text-size-adjust: 100%;
-        }
-
-        body {
-            width: 100%;
-            overflow-x: hidden;
-            padding:
-                max(16px, env(safe-area-inset-top))
-                max(16px, env(safe-area-inset-right))
-                max(16px, env(safe-area-inset-bottom))
-                max(16px, env(safe-area-inset-left));
-        }
-
-        button,
-        input {
-            font: inherit;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        button {
-            min-height: 42px;
-        }
-
-        .dashboard-grid {
-            width: 100%;
-        }
-
-        .card {
-            min-width: 0;
-            overflow: hidden;
-        }
-
-        .forecast-card,
-        .rain-slot,
-        .glance-box,
-        .stat-pill {
-            min-width: 0;
-        }
-
-        .chart-container {
-            position: relative;
-        }
-
-        /* Large tablets / smaller laptops */
         @media (max-width: 1100px) {
-            body {
-                padding-left: 24px;
-                padding-right: 24px;
-            }
-
-            header {
-                flex-wrap: wrap;
-                gap: 16px;
-            }
-
-            .nav-links {
-                order: 3;
-                width: 100%;
-                justify-content: center;
-            }
-
-            .header-right {
-                margin-left: auto;
-            }
-
-            .dashboard-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        /* Tablets */
-        @media (max-width: 768px) {
-            body {
-                padding: 14px;
-            }
-
-            header {
-                align-items: center;
-                padding-bottom: 12px;
-                margin-bottom: 18px;
-                gap: 12px;
-            }
-
-            .logo-area {
-                font-size: 1.05rem;
-            }
-
-            .nav-links {
-                order: 3;
-                justify-content: flex-start;
-                gap: 0;
-                overflow-x: auto;
-                width: 100%;
-                padding-bottom: 2px;
-                scrollbar-width: none;
-                -webkit-overflow-scrolling: touch;
-            }
-
-            .nav-links::-webkit-scrollbar {
-                display: none;
-            }
-
-            .nav-links div {
-                flex: 0 0 auto;
-                padding: 10px 16px 11px;
-                min-height: 42px;
-            }
-
-            .header-right {
-                width: 100%;
-                margin-left: 0;
-                display: grid;
-                grid-template-columns: auto minmax(0, 1fr);
-                gap: 10px;
-            }
-
-            .location-btn {
-                justify-content: center;
-                white-space: nowrap;
-                min-height: 44px;
-            }
-
-            .search-bar-wrapper {
-                width: 100%;
-                min-width: 0;
-            }
-
-            .search-bar-wrapper input {
-                min-height: 44px;
-                font-size: 16px; /* prevents iOS Safari zoom */
-            }
-
-            .dashboard-grid {
-                gap: 14px;
-            }
-
-            .dashboard-grid > div {
-                gap: 14px !important;
-            }
-
-            .card {
-                padding: 18px;
-                border-radius: 14px;
-            }
-
-            .main-temp-display {
-                gap: 10px;
-                flex-wrap: wrap;
-            }
-
-            .temp-value {
-                font-size: clamp(3.2rem, 12vw, 4rem);
-            }
-
-            .temp-condition {
-                font-size: 1.1rem;
-            }
-
-            .micro-stats {
-                grid-template-columns: repeat(2, 1fr);
-                gap: 8px;
-            }
-
-            .rain-timeline {
-                grid-template-columns: repeat(2, 1fr);
-            }
-
-            .forecast-row {
-                grid-template-columns: repeat(2, 1fr);
-            }
-
-            .glance-grid {
-                grid-template-columns: repeat(2, 1fr);
-                gap: 10px;
-            }
-
-            .chat-widget {
-                right: max(14px, env(safe-area-inset-right));
-                bottom: max(14px, env(safe-area-inset-bottom));
-            }
-
-            .chat-btn {
-                width: 58px;
-                height: 58px;
-                font-size: 24px;
-            }
-
-            .chat-window {
-                width: min(420px, calc(100vw - 28px));
-                height: min(600px, calc(100dvh - 100px));
-                max-height: calc(100dvh - 100px);
-                border-radius: 14px;
-            }
-
-            .chat-input-area {
-                padding-bottom: max(15px, env(safe-area-inset-bottom));
-            }
-
-            #view-forecast .card,
-            #view-insights .card {
-                max-width: none !important;
-            }
-
-            #detailedForecastList > div {
-                flex-wrap: wrap;
-                gap: 8px;
-            }
-        }
-
-        /* Phones */
-        @media (max-width: 480px) {
-            body {
-                padding: 10px;
-            }
-
-            header {
-                margin-bottom: 14px;
-            }
-
-            .logo-area {
-                font-size: 1rem;
-            }
-
-            .header-right {
-                grid-template-columns: 1fr;
-            }
-
-            .location-btn {
-                width: 100%;
-            }
-
-            .nav-links div {
-                padding-left: 13px;
-                padding-right: 13px;
-                font-size: 0.82rem;
-            }
-
-            .card {
-                padding: 15px;
-                border-radius: 12px;
-            }
-
-            .location-title {
-                font-size: 1rem;
-            }
-
-            .update-time {
-                margin-bottom: 14px;
-            }
-
-            .main-temp-display {
-                margin: 12px 0;
-                align-items: center;
-            }
-
-            .temp-value {
-                font-size: 3.4rem;
-            }
-
-            .temp-condition {
-                font-size: 1rem;
-            }
-
-            .temp-feels {
-                font-size: 0.82rem;
-            }
-
-            .micro-stats,
-            .rain-timeline,
-            .forecast-row,
-            .glance-grid {
-                grid-template-columns: 1fr 1fr;
-            }
-
-            .stat-pill {
-                padding: 10px 6px;
-            }
-
-            .stat-lbl {
-                font-size: 0.62rem;
-            }
-
-            .stat-val {
-                font-size: 0.85rem;
-                overflow-wrap: anywhere;
-            }
-
-            .section-header {
-                font-size: 0.88rem;
-            }
-
-            .ai-text {
-                font-size: 0.86rem;
-            }
-
-            .activity-item {
-                padding: 11px 12px;
-                font-size: 0.84rem;
-            }
-
-            .activity-item strong {
-                font-size: 0.88rem;
-            }
-
-            .rain-slot {
-                padding: 10px 6px;
-            }
-
-            .rain-time {
-                font-size: 0.68rem;
-            }
-
-            .rain-chance {
-                font-size: 0.92rem;
-            }
-
-            .forecast-card {
-                padding: 12px 8px;
-            }
-
-            .f-day {
-                font-size: 0.82rem;
-            }
-
-            .f-date {
-                font-size: 0.68rem;
-            }
-
-            .glance-box {
-                padding: 12px 10px;
-            }
-
-            .glance-lbl {
-                font-size: 0.65rem;
-            }
-
-            .glance-val {
-                font-size: 0.95rem;
-                overflow-wrap: anywhere;
-            }
-
-            .chart-container {
-                height: 160px;
-                margin-top: 12px;
-            }
-
-            .chat-widget {
-                right: 10px;
-                bottom: max(10px, env(safe-area-inset-bottom));
-            }
-
-            .chat-window {
-                position: fixed;
-                left: 10px;
-                right: 10px;
-                bottom: calc(78px + env(safe-area-inset-bottom));
-                width: auto;
-                height: min(70dvh, 560px);
-                max-height: calc(100dvh - 100px);
-                margin: 0;
-            }
-
-            .chat-messages {
-                padding: 14px;
-            }
-
-            .chat-suggestions {
-                padding: 0 14px 12px;
-                max-height: 88px;
-                overflow-y: auto;
-            }
-
-            .suggestion-chip {
-                font-size: 0.74rem;
-                padding: 7px 10px;
-            }
-
-            .chat-input-area {
-                padding: 10px 12px;
-                gap: 7px;
-            }
-
-            .chat-input-area input {
-                min-width: 0;
-                min-height: 44px;
-                font-size: 16px;
-            }
-
-            .chat-input-area button {
-                min-height: 44px;
-                padding: 0 14px;
-            }
-
-            .msg {
-                max-width: 90%;
-                font-size: 0.84rem;
-            }
-
-            #detailedForecastList > div {
-                display: grid !important;
-                grid-template-columns: 1fr;
-                align-items: start !important;
-            }
-
-            #view-forecast .card,
-            #view-insights .card {
-                padding: 15px;
-            }
-
-            #view-forecast h2,
-            #view-insights h2 {
-                font-size: 1.25rem;
-                margin-bottom: 12px;
-            }
-        }
-
-        /* Very small phones */
-        @media (max-width: 360px) {
-            body {
-                padding: 8px;
-            }
-
-            .card {
-                padding: 13px;
-            }
-
-            .temp-value {
-                font-size: 3rem;
-            }
-
-            .nav-links div {
-                padding-left: 10px;
-                padding-right: 10px;
-                font-size: 0.78rem;
-            }
-
-            .stat-pill,
-            .glance-box {
-                padding-left: 5px;
-                padding-right: 5px;
-            }
-        }
-
-        /* Reduce motion for users who request it */
-        @media (prefers-reduced-motion: reduce) {
-            *,
-            *::before,
-            *::after {
-                scroll-behavior: auto !important;
-                transition: none !important;
-                animation: none !important;
-            }
-        }
-
-
-        /* =========================================================
-           MODERN FORECAST + AI INSIGHTS
-           ========================================================= */
-
-        .modern-page-head {
-            max-width: 1300px;
-            margin: 0 auto 20px;
-            display: flex;
-            align-items: flex-end;
-            justify-content: space-between;
-            gap: 18px;
-        }
-
-        .modern-page-head h1 {
-            font-size: clamp(1.65rem, 3vw, 2.35rem);
-            letter-spacing: -0.04em;
-            margin: 4px 0 5px;
-        }
-
-        .modern-page-head p {
-            color: #94a3b8;
-            font-size: .9rem;
-        }
-
-        .eyebrow {
-            color: #60a5fa;
-            font-size: .68rem;
-            font-weight: 700;
-            letter-spacing: .14em;
-        }
-
-        .forecast-status,
-        .ai-status {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            color: #94a3b8;
-            font-size: .78rem;
-            background: rgba(255,255,255,.035);
-            border: 1px solid rgba(255,255,255,.07);
-            padding: 9px 12px;
-            border-radius: 999px;
-            white-space: nowrap;
-        }
-
-        .live-dot,
-        .ai-pulse {
-            width: 7px;
-            height: 7px;
-            border-radius: 50%;
-            background: #22c55e;
-            box-shadow: 0 0 12px rgba(34,197,94,.7);
-        }
-
-        .ai-pulse {
-            background: #a78bfa;
-            box-shadow: 0 0 12px rgba(167,139,250,.8);
-        }
-
-        .forecast-summary-grid {
-            max-width: 1300px;
-            margin: 0 auto 20px;
-            display: grid;
-            grid-template-columns: 1.2fr 1fr 1fr;
-            gap: 14px;
-        }
-
-        .forecast-highlight {
-            min-height: 145px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .forecast-highlight::after {
-            content: "";
-            position: absolute;
-            width: 130px;
-            height: 130px;
-            right: -60px;
-            bottom: -70px;
-            border-radius: 50%;
-            background: rgba(59,130,246,.12);
-            filter: blur(3px);
-        }
-
-        .big-range {
-            font-size: 2rem;
-            font-weight: 650;
-            letter-spacing: -.04em;
-            margin: 7px 0 3px;
-        }
-
-        .mini-caption {
-            color: #64748b;
-            font-size: .74rem;
-            line-height: 1.45;
-        }
-
-        .range-track,
-        .rain-meter {
-            height: 6px;
-            background: rgba(255,255,255,.07);
-            border-radius: 99px;
-            overflow: hidden;
-            margin-top: 14px;
-        }
-
-        .range-track span,
-        .rain-meter span {
-            display: block;
-            height: 100%;
-            width: 0%;
-            border-radius: inherit;
-            background: linear-gradient(90deg,#38bdf8,#3b82f6,#818cf8);
-            transition: width .5s ease;
-        }
-
-        .rain-meter span {
-            background: linear-gradient(90deg,#60a5fa,#38bdf8);
-        }
-
-        .forecast-main-card,
-        .forecast-detail-card {
-            max-width: 1300px;
-            margin: 0 auto 20px;
-        }
-
-        .forecast-toolbar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 15px;
-            margin-bottom: 16px;
-        }
-
-        .forecast-legend {
-            display: flex;
-            gap: 12px;
-            color: #64748b;
-            font-size: .7rem;
-        }
-
-        .forecast-legend span::before {
-            content: "•";
-            color: #60a5fa;
-            margin-right: 4px;
-        }
-
-        .modern-forecast-list {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 10px;
-        }
-
-        .modern-forecast-card {
-            background: linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.018));
-            border: 1px solid rgba(255,255,255,.07);
-            border-radius: 15px;
-            padding: 15px 12px;
-            text-align: center;
-            cursor: pointer;
-            transition: transform .2s ease, border-color .2s ease, background .2s ease;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .modern-forecast-card:hover,
-        .modern-forecast-card.selected {
-            transform: translateY(-3px);
-            border-color: rgba(96,165,250,.45);
-            background: linear-gradient(180deg, rgba(59,130,246,.12), rgba(255,255,255,.025));
-        }
-
-        .modern-forecast-card.today {
-            box-shadow: inset 0 2px 0 #3b82f6;
-        }
-
-        .mf-day {
-            font-weight: 700;
-            font-size: .88rem;
-        }
-
-        .mf-date {
-            color: #64748b;
-            font-size: .68rem;
-            margin-top: 3px;
-        }
-
-        .mf-icon {
-            font-size: 2rem;
-            margin: 13px 0 8px;
-        }
-
-        .mf-temp {
-            font-size: 1.05rem;
-            font-weight: 700;
-        }
-
-        .mf-low {
-            color: #64748b;
-            font-weight: 500;
-            margin-left: 4px;
-        }
-
-        .mf-rain {
-            margin-top: 12px;
-            color: #60a5fa;
-            font-size: .73rem;
-            font-weight: 600;
-        }
-
-        .mf-rainbar {
-            height: 4px;
-            background: rgba(255,255,255,.06);
-            border-radius: 99px;
-            margin-top: 6px;
-            overflow: hidden;
-        }
-
-        .mf-rainbar span {
-            display: block;
-            height: 100%;
-            background: #38bdf8;
-            border-radius: inherit;
-        }
-
-        .mf-condition {
-            color: #94a3b8;
-            font-size: .7rem;
-            margin-top: 8px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-
-        /* =========================================================
-           DETAILED FORECAST - MODERN WEATHER TIMELINE
-           ========================================================= */
-
-        .forecast-detail-card {
-            padding: 22px;
-            background:
-                radial-gradient(circle at 100% 0%, rgba(59,130,246,.08), transparent 35%),
-                rgba(17,24,39,.72);
-        }
-
-        .detailed-forecast-list {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .detailed-day-card {
-            position: relative;
-            display: grid;
-            grid-template-columns: minmax(115px, 1.05fr) minmax(120px, .8fr) minmax(170px, 1.1fr) minmax(150px, .9fr);
-            align-items: center;
-            gap: 18px;
-            padding: 16px 18px;
-            border: 1px solid rgba(255,255,255,.07);
-            border-radius: 16px;
-            background: linear-gradient(100deg, rgba(255,255,255,.045), rgba(255,255,255,.018));
-            overflow: hidden;
-            transition: transform .2s ease, border-color .2s ease, background .2s ease;
-        }
-
-        .detailed-day-card::before {
-            content: "";
-            position: absolute;
-            left: 0;
-            top: 10px;
-            bottom: 10px;
-            width: 3px;
-            border-radius: 0 5px 5px 0;
-            background: #3b82f6;
-            opacity: .75;
-        }
-
-        .detailed-day-card:hover {
-            transform: translateX(3px);
-            border-color: rgba(96,165,250,.28);
-            background: linear-gradient(100deg, rgba(59,130,246,.09), rgba(255,255,255,.025));
-        }
-
-        .dd-day {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .dd-day-name {
-            font-size: .98rem;
-            font-weight: 750;
-            color: #f8fafc;
-        }
-
-        .dd-date {
-            font-size: .72rem;
-            color: #64748b;
-        }
-
-        .dd-condition {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            min-width: 0;
-        }
-
-        .dd-icon {
-            width: 42px;
-            height: 42px;
-            display: grid;
-            place-items: center;
-            flex: 0 0 42px;
-            border-radius: 12px;
-            background: rgba(59,130,246,.10);
-            border: 1px solid rgba(96,165,250,.12);
-            font-size: 1.45rem;
-        }
-
-        .dd-condition-text {
-            min-width: 0;
-        }
-
-        .dd-condition-title {
-            font-size: .86rem;
-            font-weight: 650;
-            text-transform: capitalize;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .dd-condition-sub {
-            margin-top: 3px;
-            color: #64748b;
-            font-size: .68rem;
-        }
-
-        .dd-temperature {
-            min-width: 0;
-        }
-
-        .dd-temp-line {
-            display: flex;
-            align-items: baseline;
-            gap: 8px;
-            margin-bottom: 7px;
-        }
-
-        .dd-high {
-            font-size: 1.12rem;
-            font-weight: 750;
-        }
-
-        .dd-low {
-            color: #64748b;
-            font-size: .88rem;
-        }
-
-        .dd-temp-track {
-            height: 5px;
-            border-radius: 99px;
-            background: rgba(255,255,255,.07);
-            overflow: hidden;
-        }
-
-        .dd-temp-track span {
-            display: block;
-            height: 100%;
-            border-radius: inherit;
-            background: linear-gradient(90deg, #60a5fa, #38bdf8);
-        }
-
-        .dd-rain {
-            min-width: 0;
-        }
-
-        .dd-rain-top {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 7px;
-        }
-
-        .dd-rain-label {
-            color: #94a3b8;
-            font-size: .7rem;
-        }
-
-        .dd-rain-value {
-            color: #60a5fa;
-            font-size: .82rem;
-            font-weight: 750;
-        }
-
-        .dd-rain-track {
-            height: 7px;
-            border-radius: 99px;
-            background: rgba(255,255,255,.07);
-            overflow: hidden;
-        }
-
-        .dd-rain-track span {
-            display: block;
-            height: 100%;
-            border-radius: inherit;
-            background: linear-gradient(90deg, #38bdf8, #2563eb);
-            transition: width .5s ease;
-        }
-
-        .dd-rain-caption {
-            margin-top: 5px;
-            color: #64748b;
-            font-size: .65rem;
-        }
-
-        .dd-today-badge {
-            display: inline-flex;
-            align-items: center;
-            width: fit-content;
-            padding: 3px 7px;
-            border-radius: 99px;
-            margin-bottom: 3px;
-            background: rgba(59,130,246,.13);
-            color: #93c5fd;
-            border: 1px solid rgba(96,165,250,.16);
-            font-size: .58rem;
-            font-weight: 700;
-            letter-spacing: .06em;
-            text-transform: uppercase;
-        }
-
-        @media (max-width: 850px) {
-            .detailed-day-card {
-                grid-template-columns: 1fr 1fr;
-                gap: 14px;
-            }
-
-            .dd-condition {
-                justify-self: end;
-            }
-
-            .dd-temperature,
-            .dd-rain {
-                grid-column: span 1;
-            }
-        }
-
-        @media (max-width: 520px) {
-            .forecast-detail-card {
-                padding: 15px;
-            }
-
-            .detailed-day-card {
-                grid-template-columns: 1fr;
-                gap: 12px;
-                padding: 15px;
-            }
-
-            .dd-condition {
-                justify-self: start;
-            }
-
-            .dd-temperature,
-            .dd-rain {
-                grid-column: auto;
-            }
-        }
-
-        .forecast-detail-card #detailedForecastList > div {
-            border: 1px solid rgba(255,255,255,.055) !important;
-            background: rgba(255,255,255,.025) !important;
-            margin-bottom: 8px !important;
-            transition: background .2s ease;
-        }
-
-        .forecast-detail-card #detailedForecastList > div:hover {
-            background: rgba(59,130,246,.07) !important;
-        }
-
-        .insight-hero {
-            max-width: 1300px;
-            margin: 0 auto 18px;
-            display: flex;
-            align-items: center;
-            gap: 18px;
-            padding: 24px;
-            background:
-                radial-gradient(circle at 15% 20%, rgba(59,130,246,.20), transparent 35%),
-                linear-gradient(135deg, rgba(17,24,39,.9), rgba(30,41,59,.65));
-            border-color: rgba(96,165,250,.16);
-        }
-
-        .insight-hero-icon {
-            width: 58px;
-            height: 58px;
-            flex: 0 0 58px;
-            display: grid;
-            place-items: center;
-            border-radius: 16px;
-            font-size: 1.7rem;
-            background: rgba(59,130,246,.13);
-            border: 1px solid rgba(96,165,250,.25);
-            color: #93c5fd;
-        }
-
-        .insight-hero-copy {
-            flex: 1;
-            min-width: 0;
-        }
-
-        .insight-hero h2 {
-            font-size: clamp(1.15rem, 2.2vw, 1.65rem);
-            line-height: 1.25;
-            margin: 4px 0 5px;
-        }
-
-        .insight-hero p {
-            color: #94a3b8;
-            font-size: .82rem;
-        }
-
-        .confidence-badge {
-            color: #93c5fd;
-            background: rgba(59,130,246,.1);
-            border: 1px solid rgba(96,165,250,.2);
-            border-radius: 999px;
-            padding: 7px 10px;
-            font-size: .66rem;
-            font-weight: 700;
-            letter-spacing: .08em;
-        }
-
-        .insight-grid {
-            max-width: 1300px;
-            margin: 0 auto;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 14px;
-        }
-
-        .insight-card {
-            min-height: 190px;
-        }
-
-        .insight-wide {
-            grid-column: 1 / -1;
-        }
-
-        .signal-list,
-        .action-list {
-            display: grid;
-            gap: 8px;
-        }
-
-        .signal-row,
-        .action-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 10px;
-            padding: 11px 12px;
-            border-radius: 11px;
-            background: rgba(255,255,255,.025);
-            border: 1px solid rgba(255,255,255,.05);
-        }
-
-        .signal-label {
-            color: #94a3b8;
-            font-size: .76rem;
-        }
-
-        .signal-value {
-            font-size: .78rem;
-            font-weight: 700;
-        }
-
-        .action-row {
-            justify-content: flex-start;
-        }
-
-        .action-icon {
-            width: 28px;
-            height: 28px;
-            display: grid;
-            place-items: center;
-            border-radius: 8px;
-            background: rgba(59,130,246,.1);
-            flex: 0 0 28px;
-        }
-
-        .action-text {
-            font-size: .78rem;
-            color: #cbd5e1;
-            line-height: 1.35;
-        }
-
-        .ai-reading {
-            color: #dbeafe;
-            font-size: .98rem;
-            line-height: 1.8;
-            padding: 6px 0 15px;
-        }
-
-        .ai-reading strong {
-            color: #93c5fd;
-        }
-
-        .insight-footer {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 10px;
-            padding-top: 13px;
-            border-top: 1px solid rgba(255,255,255,.06);
-            color: #64748b;
-            font-size: .7rem;
-        }
-
-        .ask-insight-btn {
-            border: 1px solid rgba(96,165,250,.25);
-            background: rgba(59,130,246,.09);
-            color: #93c5fd;
-            border-radius: 9px;
-            padding: 8px 11px;
-            cursor: pointer;
-            min-height: 36px;
-        }
-
-        .travel-modern {
-            color: #bfdbfe;
-            background: rgba(59,130,246,.08);
-            border: 1px solid rgba(59,130,246,.18);
-            border-radius: 12px;
-            padding: 14px;
-            line-height: 1.6;
-            font-size: .82rem;
-        }
-
-        .activity-score-grid {
-            display: grid;
-            grid-template-columns: repeat(2,1fr);
-            gap: 8px;
-        }
-
-        .modern-score {
-            padding: 10px;
-            border-radius: 10px;
-            background: rgba(255,255,255,.025);
-            border: 1px solid rgba(255,255,255,.05);
-        }
-
-        .modern-score-top {
-            display: flex;
-            justify-content: space-between;
-            font-size: .72rem;
-            margin-bottom: 7px;
-        }
-
-        .score-number {
-            color: #60a5fa;
-            font-weight: 700;
-        }
-
-        .score-bar {
-            height: 5px;
-            border-radius: 99px;
-            background: rgba(255,255,255,.06);
-            overflow: hidden;
-        }
-
-        .score-bar span {
-            display: block;
-            height: 100%;
-            border-radius: inherit;
-            background: linear-gradient(90deg,#38bdf8,#818cf8);
-        }
-
-        @media (max-width: 900px) {
-            .forecast-summary-grid {
-                grid-template-columns: 1fr 1fr;
-            }
-
-            .forecast-summary-grid .forecast-highlight:last-child {
-                grid-column: 1 / -1;
-            }
-
-            .modern-forecast-list {
-                grid-template-columns: repeat(3,1fr);
-            }
+            body { padding-left: 24px; padding-right: 24px; }
+            header { flex-wrap: wrap; gap: 16px; }
+            .nav-links { order: 3; width: 100%; justify-content: center; }
+            .header-right { margin-left: auto; }
+            .dashboard-grid { grid-template-columns: 1fr; }
         }
 
         @media (max-width: 768px) {
-            .modern-page-head {
-                align-items: flex-start;
-                flex-direction: column;
-            }
-
-            .forecast-summary-grid,
-            .insight-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .forecast-summary-grid .forecast-highlight:last-child {
-                grid-column: auto;
-            }
-
-            .modern-forecast-list {
-                display: flex;
-                overflow-x: auto;
-                scroll-snap-type: x mandatory;
-                padding-bottom: 5px;
-                scrollbar-width: none;
-            }
-
-            .modern-forecast-list::-webkit-scrollbar {
-                display: none;
-            }
-
-            .modern-forecast-card {
-                min-width: 150px;
-                scroll-snap-align: start;
-            }
-
-            .insight-wide {
-                grid-column: auto;
-            }
-
-            .insight-hero {
-                align-items: flex-start;
-                flex-wrap: wrap;
-            }
-
-            .confidence-badge {
-                margin-left: 76px;
-                margin-top: -10px;
-            }
-
-            .forecast-toolbar {
-                align-items: flex-start;
-                flex-direction: column;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .modern-page-head h1 {
-                font-size: 1.55rem;
-            }
-
-            .forecast-status,
-            .ai-status {
-                font-size: .7rem;
-            }
-
-            .forecast-highlight {
-                min-height: 130px;
-            }
-
-            .big-range {
-                font-size: 1.65rem;
-            }
-
-            .insight-hero {
-                padding: 17px;
-            }
-
-            .insight-hero-icon {
-                width: 48px;
-                height: 48px;
-                flex-basis: 48px;
-            }
-
-            .confidence-badge {
-                margin-left: 65px;
-            }
-
-            .activity-score-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .insight-footer {
-                align-items: flex-start;
-                flex-direction: column;
-            }
-        }
-
-        /* SKY SENSE POLISH: restrained motion, depth, accessibility */
-        :root { --sky-ease: cubic-bezier(.22,1,.36,1); }
-        html { scroll-behavior: smooth; -webkit-tap-highlight-color: transparent; }
-        body { overscroll-behavior-x: none; }
-        .card,.forecast-card,.rain-slot,.glance-box,.stat-pill,.activity-item {
-            transition: transform .28s var(--sky-ease), border-color .28s ease, background .28s ease, box-shadow .28s ease;
-        }
-        .card:hover { border-color: rgba(96,165,250,.16); box-shadow: 0 14px 36px rgba(0,0,0,.14); }
-        .forecast-card:hover,.rain-slot:hover,.glance-box:hover,.stat-pill:hover { transform: translateY(-3px); border-color: rgba(96,165,250,.22); background: rgba(255,255,255,.045); }
-        .activity-item:hover { transform: translateX(3px); border-color: rgba(96,165,250,.18); }
-        :where(button,input,.nav-links div,.suggestion-chip):focus-visible { outline:2px solid #60a5fa; outline-offset:3px; }
-        #loading { position:fixed; inset:0; z-index:3000; display:none; align-items:center; justify-content:center; padding:24px; background:rgba(4,10,24,.58); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); color:#cbd5e1; font-size:.88rem; }
-        #loading::before { content:""; width:22px; height:22px; margin-right:12px; border:2px solid rgba(255,255,255,.16); border-top-color:#60a5fa; border-radius:50%; animation:skySpin .8s linear infinite; }
-        @keyframes skySpin { to { transform:rotate(360deg); } }
-        .view-section.active-view { animation:skyViewIn .38s var(--sky-ease) both; }
-        @keyframes skyViewIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
-        .forecast-card,.rain-slot,.detailed-day-card,.activity-item { animation:skyItemIn .45s var(--sky-ease) both; }
-        @keyframes skyItemIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
-        .update-time { display:flex; align-items:center; gap:7px; }
-        .update-time::before { content:""; width:6px; height:6px; flex:0 0 6px; border-radius:50%; background:#34d399; box-shadow:0 0 0 4px rgba(52,211,153,.08); animation:skyPulse 2.2s ease-in-out infinite; }
-        @keyframes skyPulse { 0%,100%{opacity:.55;transform:scale(.9)} 50%{opacity:1;transform:scale(1)} }
-        .chart-container canvas { display:block; max-width:100%; }
-        @media (max-width:480px) { .card:hover,.forecast-card:hover,.rain-slot:hover,.glance-box:hover,.stat-pill:hover,.activity-item:hover { transform:none; } #loading { font-size:.8rem; text-align:center; } }
-        @media (prefers-reduced-motion:reduce) { html{scroll-behavior:auto} *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important} }
-
-        /* FINAL RESPONSIVE FIX */
-        *,*::before,*::after{min-width:0;}
-        html,body{width:100%;max-width:100%;overflow-x:hidden;}
-        body{padding-left:clamp(10px,3vw,40px);padding-right:clamp(10px,3vw,40px);}
-        header,.dashboard-grid,.modern-page-head,.forecast-summary-grid,.forecast-main-card,.forecast-detail-card,.insight-hero,.insight-grid{width:100%;max-width:1300px;}
-        .location-title,.ai-text,.travel-advisor-box,.ai-reading,.travel-modern,.signal-row,.action-row{overflow-wrap:anywhere;word-break:break-word;}
-        @media(max-width:1100px){
-          body{padding-left:18px;padding-right:18px;}
-          header{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px 18px;}
-          .logo-area{grid-column:1;grid-row:1}.header-right{grid-column:2;grid-row:1;width:100%;}.nav-links{grid-column:1/-1;grid-row:2;width:100%;justify-content:center;}
-          .dashboard-grid{grid-template-columns:minmax(0,1fr);}
-          .forecast-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
-          .forecast-highlight:last-child{grid-column:1/-1;}
-          .modern-forecast-list{grid-template-columns:repeat(3,minmax(0,1fr));}
-          .detailed-day-card{grid-template-columns:minmax(90px,.8fr) minmax(130px,1fr);}
-        }
-        @media(max-width:768px){
-          body{padding:10px;}
-          header{display:flex;flex-direction:column;align-items:stretch;gap:10px;}
-          .logo-area{justify-content:center;width:100%;}.header-right{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.6fr);width:100%;margin:0;}
-          .location-btn,.search-bar-wrapper{width:100%;min-width:0;}.location-btn{overflow:hidden;text-overflow:ellipsis;}
-          .nav-links{width:100%;justify-content:flex-start;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-webkit-overflow-scrolling:touch;}.nav-links::-webkit-scrollbar{display:none;}
-          .nav-links div{flex:0 0 auto;}
-          .dashboard-grid{display:grid;grid-template-columns:minmax(0,1fr);}.dashboard-grid>div{width:100%;min-width:0;}
-          .micro-stats,.glance-grid,.rain-timeline{grid-template-columns:repeat(2,minmax(0,1fr));}
-          .modern-page-head{align-items:stretch;}.forecast-summary-grid,.insight-grid{grid-template-columns:minmax(0,1fr);}.forecast-highlight:last-child{grid-column:auto;}
-          .modern-forecast-list{display:flex;width:100%;max-width:100%;overflow-x:auto;overflow-y:hidden;gap:10px;padding:2px 2px 10px;scroll-snap-type:x proximity;scrollbar-width:none;-webkit-overflow-scrolling:touch;}.modern-forecast-list::-webkit-scrollbar{display:none;}
-          .modern-forecast-card{flex:0 0 150px;min-width:150px;scroll-snap-align:start;}
-          .forecast-toolbar{align-items:flex-start;flex-direction:column;}
-          .detailed-day-card{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:13px;padding:14px;}.dd-condition{justify-self:end;}.dd-temperature,.dd-rain{grid-column:1/-1;}
-          .insight-hero{align-items:flex-start;flex-wrap:wrap;padding:17px;}.confidence-badge{margin-left:0;}.insight-wide{grid-column:auto;}
-          .chat-window{position:fixed;left:10px;right:10px;bottom:calc(76px + env(safe-area-inset-bottom));width:auto;max-width:none;height:min(70dvh,560px);max-height:calc(100dvh - 94px);}
-        }
-        @media(max-width:480px){
-          .header-right{grid-template-columns:1fr;}.location-btn{width:100%;}.card{padding:14px;}.temp-value{font-size:clamp(2.8rem,15vw,3.4rem);}
-          .modern-forecast-card{flex-basis:145px;min-width:145px;}.detailed-day-card{grid-template-columns:minmax(0,1fr);}.dd-condition{justify-self:start;}.dd-temperature,.dd-rain{grid-column:auto;}
-          .activity-score-grid{grid-template-columns:minmax(0,1fr);}.ask-insight-btn{width:100%;}.chat-window{left:8px;right:8px;bottom:calc(72px + env(safe-area-inset-bottom));height:min(68dvh,540px);}
-        }
-        @media(max-width:360px){body{padding:7px;}.card{padding:12px;}.modern-forecast-card{flex-basis:138px;min-width:138px;}}
-    
-        /* =========================================================
-           SKY SENSE MOTION SYSTEM
-           Smooth UI animations + premium loading experience
-           ========================================================= */
-
-        :root {
-            --sky-ease: cubic-bezier(.22, 1, .36, 1);
-        }
-
-        /* Page entrance */
-        body {
-            animation: skyBodyIn .7s var(--sky-ease) both;
-        }
-
-        @keyframes skyBodyIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        /* Header */
-        header {
-            animation: skyHeaderIn .65s var(--sky-ease) both;
-        }
-
-        @keyframes skyHeaderIn {
-            from {
-                opacity: 0;
-                transform: translateY(-12px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .logo-area {
-            transition: transform .3s var(--sky-ease);
-        }
-
-        .logo-area:hover {
-            transform: translateY(-2px);
-        }
-
-        /* Cards */
-        .card {
-            transition:
-                transform .35s var(--sky-ease),
-                border-color .35s ease,
-                box-shadow .35s ease,
-                background .35s ease;
-        }
-
-        .card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 16px 40px rgba(0,0,0,.18);
-        }
-
-        /* Weather stat cards */
-        .stat-pill,
-        .glance-box,
-        .rain-slot,
-        .forecast-card,
-        .activity-item {
-            animation: skyCardIn .55s var(--sky-ease) both;
-        }
-
-        @keyframes skyCardIn {
-            from {
-                opacity: 0;
-                transform: translateY(12px) scale(.98);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-            }
-        }
-
-        /* Stagger animation */
-        .micro-stats .stat-pill:nth-child(1) { animation-delay: .05s; }
-        .micro-stats .stat-pill:nth-child(2) { animation-delay: .10s; }
-        .micro-stats .stat-pill:nth-child(3) { animation-delay: .15s; }
-        .micro-stats .stat-pill:nth-child(4) { animation-delay: .20s; }
-
-        .glance-grid .glance-box:nth-child(1) { animation-delay: .05s; }
-        .glance-grid .glance-box:nth-child(2) { animation-delay: .10s; }
-        .glance-grid .glance-box:nth-child(3) { animation-delay: .15s; }
-        .glance-grid .glance-box:nth-child(4) { animation-delay: .20s; }
-
-        /* Main temperature */
-        .temp-value {
-            animation: skyTempReveal .8s var(--sky-ease) both;
-        }
-
-        @keyframes skyTempReveal {
-            from {
-                opacity: 0;
-                transform: translateY(12px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        /* Weather insight shimmer */
-        .ai-text,
-        .ai-reading {
-            animation: skyTextIn .7s var(--sky-ease) both;
-        }
-
-        @keyframes skyTextIn {
-            from {
-                opacity: 0;
-                transform: translateY(7px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        /* Modern forecast cards */
-        .modern-forecast-card {
-            transition:
-                transform .3s var(--sky-ease),
-                border-color .3s ease,
-                box-shadow .3s ease,
-                background .3s ease;
-        }
-
-        .modern-forecast-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 12px 30px rgba(0,0,0,.18);
-        }
-
-        .modern-forecast-card.selected {
-            animation: skySelected .35s var(--sky-ease) both;
-        }
-
-        @keyframes skySelected {
-            from { transform: scale(.98); }
-            to { transform: scale(1); }
-        }
-
-        .mf-icon,
-        .dd-icon {
-            transition: transform .35s var(--sky-ease);
-        }
-
-        .modern-forecast-card:hover .mf-icon,
-        .detailed-day-card:hover .dd-icon {
-            transform: scale(1.12) rotate(-3deg);
-        }
-
-        /* Progress bars animate when data appears */
-        .range-track span,
-        .rain-meter span,
-        .mf-rainbar span,
-        .dd-temp-track span,
-        .dd-rain-track span,
-        .score-bar span {
-            animation: skyBarGrow .9s var(--sky-ease) both;
-            transform-origin: left center;
-        }
-
-        @keyframes skyBarGrow {
-            from {
-                transform: scaleX(0);
-                opacity: .4;
-            }
-            to {
-                transform: scaleX(1);
-                opacity: 1;
-            }
-        }
-
-        /* Forecast detailed rows */
-        .detailed-day-card {
-            animation: skyRowIn .5s var(--sky-ease) both;
-        }
-
-        .detailed-day-card:nth-child(1) { animation-delay: .04s; }
-        .detailed-day-card:nth-child(2) { animation-delay: .08s; }
-        .detailed-day-card:nth-child(3) { animation-delay: .12s; }
-        .detailed-day-card:nth-child(4) { animation-delay: .16s; }
-        .detailed-day-card:nth-child(5) { animation-delay: .20s; }
-
-        @keyframes skyRowIn {
-            from {
-                opacity: 0;
-                transform: translateX(-10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
-        }
-
-        /* AI Insights */
-        .insight-hero {
-            animation: skyHeroIn .65s var(--sky-ease) both;
-        }
-
-        .insight-card {
-            animation: skyInsightIn .55s var(--sky-ease) both;
-        }
-
-        .insight-grid .insight-card:nth-child(1) { animation-delay: .05s; }
-        .insight-grid .insight-card:nth-child(2) { animation-delay: .10s; }
-        .insight-grid .insight-card:nth-child(3) { animation-delay: .15s; }
-        .insight-grid .insight-card:nth-child(4) { animation-delay: .20s; }
-        .insight-grid .insight-card:nth-child(5) { animation-delay: .25s; }
-
-        @keyframes skyHeroIn {
-            from {
-                opacity: 0;
-                transform: translateY(14px) scale(.985);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-            }
-        }
-
-        @keyframes skyInsightIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .insight-hero-icon {
-            animation: skyIconFloat 3s ease-in-out infinite;
-        }
-
-        @keyframes skyIconFloat {
-            0%, 100% { transform: translateY(0) rotate(0); }
-            50% { transform: translateY(-4px) rotate(2deg); }
-        }
-
-        /* Chat button */
-        .chat-btn {
-            transition:
-                transform .3s var(--sky-ease),
-                box-shadow .3s ease;
-            animation: skyChatPulse 2.8s ease-in-out infinite;
-        }
-
-        .chat-btn:hover {
-            transform: scale(1.08);
-            box-shadow: 0 8px 30px rgba(59,130,246,.35);
-        }
-
-        @keyframes skyChatPulse {
-            0%, 100% {
-                box-shadow: 0 4px 20px rgba(0,0,0,.4);
-            }
-            50% {
-                box-shadow: 0 6px 28px rgba(59,130,246,.25);
-            }
-        }
-
-        .chat-window {
-            transform-origin: bottom right;
-        }
-
-        .chat-window[style*="display: flex"] {
-            animation: skyChatOpen .3s var(--sky-ease) both;
-        }
-
-        @keyframes skyChatOpen {
-            from {
-                opacity: 0;
-                transform: translateY(12px) scale(.96);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-            }
-        }
-
-        .msg {
-            animation: skyMessageIn .3s var(--sky-ease) both;
-        }
-
-        @keyframes skyMessageIn {
-            from {
-                opacity: 0;
-                transform: translateY(6px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        /* Premium loading overlay */
-        #loading {
-            display: none;
-            flex-direction: column;
-            gap: 12px;
-            text-align: center;
-            background:
-                radial-gradient(circle at 50% 35%, rgba(59,130,246,.15), transparent 32%),
-                rgba(4,10,24,.78);
-            backdrop-filter: blur(14px);
-            -webkit-backdrop-filter: blur(14px);
-        }
-
-        #loading::before {
-            content: "";
-            width: 48px;
-            height: 48px;
-            margin: 0;
-            border: 2px solid rgba(255,255,255,.10);
-            border-top-color: #60a5fa;
-            border-right-color: #38bdf8;
-            border-radius: 50%;
-            animation: skyLoaderSpin 1s linear infinite;
-        }
-
-        #loading::after {
-            content: "SKYSENSE AI";
-            display: block;
-            color: #60a5fa;
-            font-size: .65rem;
-            font-weight: 700;
-            letter-spacing: .22em;
-            animation: skyLoaderText 1.5s ease-in-out infinite;
-        }
-
-        @keyframes skyLoaderSpin {
-            to { transform: rotate(360deg); }
-        }
-
-        @keyframes skyLoaderText {
-            0%, 100% { opacity: .45; }
-            50% { opacity: 1; }
-        }
-
-        /* Loading text itself */
-        #loading {
-            font-size: .88rem;
-            color: #cbd5e1;
-        }
-
-        /* Smooth tab switching */
-        .view-section.active-view {
-            animation: skyViewEnter .42s var(--sky-ease) both;
-        }
-
-        @keyframes skyViewEnter {
-            from {
-                opacity: 0;
-                transform: translateY(8px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        /* Respect accessibility settings */
-        @media (prefers-reduced-motion: reduce) {
-            *,
-            *::before,
-            *::after {
-                animation-duration: .001ms !important;
-                animation-iteration-count: 1 !important;
-                transition-duration: .001ms !important;
-                scroll-behavior: auto !important;
-            }
-        }
-
-        /* On small screens keep animation subtle */
-        @media (max-width: 480px) {
-            .card:hover,
-            .modern-forecast-card:hover {
-                transform: none;
-            }
-
-            .chat-btn {
-                animation-duration: 3.5s;
-            }
-        }
-
-
-        /* =========================================================
-           FORECAST INTELLIGENCE
-           ========================================================= */
-
-        .forecast-intelligence-card {
-            position: relative;
-            overflow: hidden;
-            background:
-                radial-gradient(circle at 100% 0%, rgba(96,165,250,.12), transparent 35%),
-                linear-gradient(145deg, rgba(15,23,42,.92), rgba(15,23,42,.72));
-        }
-
-        .forecast-intelligence-card::after {
-            content: "";
-            position: absolute;
-            width: 180px;
-            height: 180px;
-            right: -80px;
-            bottom: -100px;
-            border-radius: 50%;
-            background: rgba(56,189,248,.08);
-            filter: blur(20px);
-            pointer-events: none;
-        }
-
-        .forecast-intel-head {
-            display: flex;
-            align-items: flex-start;
-            justify-content: space-between;
-            gap: 14px;
-            margin-bottom: 18px;
-        }
-
-        .ensemble-badge {
-            flex: 0 0 auto;
-            padding: 7px 10px;
-            border-radius: 999px;
-            border: 1px solid rgba(96,165,250,.18);
-            background: rgba(59,130,246,.08);
-            color: #93c5fd;
-            font-size: .68rem;
-            font-weight: 700;
-            white-space: nowrap;
-        }
-
-        .ensemble-grid {
-            display: grid;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
-            gap: 10px;
-        }
-
-        .ensemble-metric {
-            padding: 14px;
-            border-radius: 14px;
-            border: 1px solid rgba(255,255,255,.07);
-            background: rgba(255,255,255,.025);
-        }
-
-        .ensemble-label {
-            color: #64748b;
-            font-size: .67rem;
-            text-transform: uppercase;
-            letter-spacing: .06em;
-            margin-bottom: 7px;
-        }
-
-        .ensemble-value {
-            font-size: 1.25rem;
-            font-weight: 800;
-            color: #f8fafc;
-        }
-
-        .ensemble-sub {
-            margin-top: 4px;
-            color: #64748b;
-            font-size: .65rem;
-            line-height: 1.4;
-        }
-
-        .ensemble-explainer {
-            display: flex;
-            gap: 11px;
-            align-items: flex-start;
-            margin-top: 12px;
-            padding: 13px 14px;
-            border-radius: 13px;
-            border: 1px solid rgba(255,255,255,.06);
-            background: rgba(2,6,23,.24);
-        }
-
-        .ensemble-icon {
-            display: grid;
-            place-items: center;
-            width: 28px;
-            height: 28px;
-            flex: 0 0 28px;
-            border-radius: 9px;
-            background: rgba(59,130,246,.12);
-            color: #60a5fa;
-            font-size: 1rem;
-        }
-
-        .ensemble-explainer strong {
-            font-size: .78rem;
-        }
-
-        .ensemble-explainer p {
-            margin: 3px 0 0;
-            color: #64748b;
-            font-size: .7rem;
-            line-height: 1.55;
-        }
-
-        .ensemble-confidence-high {
-            color: #4ade80 !important;
-        }
-
-        .ensemble-confidence-moderate {
-            color: #fbbf24 !important;
-        }
-
-        .ensemble-confidence-lower {
-            color: #fb7185 !important;
-        }
-
-        @media (max-width: 850px) {
-            .ensemble-grid {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-            }
-        }
-
-        @media (max-width: 480px) {
-            .forecast-intel-head {
-                flex-direction: column;
-            }
-
-            .ensemble-badge {
-                white-space: normal;
-            }
-
-            .ensemble-grid {
-                grid-template-columns: minmax(0, 1fr);
-            }
-
-            .ensemble-explainer {
-                padding: 12px;
-            }
-        }
-
-
-        /* =========================================================
-           SKYSENSE FINAL COLOR SYSTEM
-           Deep Navy → Card Navy → Blue/Cyan → White
-           ========================================================= */
-
-        :root {
-            --sky-bg: #071426;
-            --sky-card: #0D1B2E;
-            --sky-card-2: #10243A;
-            --sky-blue: #3B82F6;
-            --sky-blue-light: #60A5FA;
-            --sky-cyan: #38BDF8;
-            --sky-white: #F8FAFC;
-            --sky-muted: #94A3B8;
-            --sky-good: #4ADE80;
-            --sky-warning: #FBBF24;
-            --sky-danger: #FB7185;
-        }
-
-        html {
-            background: var(--sky-bg) !important;
-        }
-
-        body {
-            background:
-                radial-gradient(circle at 12% 0%, rgba(59,130,246,.07), transparent 30%),
-                radial-gradient(circle at 88% 12%, rgba(56,189,248,.045), transparent 28%),
-                var(--sky-bg) !important;
-            color: var(--sky-white) !important;
-        }
-
-        header,
-        .header,
-        .topbar {
-            background: rgba(7,20,38,.92) !important;
-            border-color: rgba(96,165,250,.10) !important;
-        }
-
-        .card,
-        .forecast-card,
-        .modern-forecast-card,
-        .detailed-day-card,
-        .insight-card,
-        .forecast-highlight,
-        .ensemble-metric,
-        .glance-box,
-        .stat-pill,
-        .rain-slot,
-        .activity-item,
-        .forecast-intelligence-card {
-            background: linear-gradient(
-                145deg,
-                rgba(13,27,46,.96),
-                rgba(16,36,58,.78)
-            ) !important;
-            border-color: rgba(96,165,250,.10) !important;
-        }
-
-        .card:hover,
-        .modern-forecast-card:hover,
-        .detailed-day-card:hover {
-            border-color: rgba(59,130,246,.28) !important;
-            box-shadow: 0 16px 40px rgba(0,0,0,.22) !important;
-        }
-
-        /* Primary information */
-        .temp-value,
-        .f-high,
-        .dd-high,
-        .ensemble-value,
-        .glance-val,
-        .stat-val {
-            color: var(--sky-white) !important;
-        }
-
-        /* Secondary information */
-        .f-date,
-        .dd-date,
-        .dd-condition-sub,
-        .ensemble-sub,
-        .ensemble-label,
-        .dd-rain-label,
-        .dd-rain-caption,
-        .mini-caption,
-        .glance-label,
-        .stat-label {
-            color: var(--sky-muted) !important;
-        }
-
-        /* Blue / cyan emphasis */
-        .f-day,
-        .dd-day-name,
-        .dd-rain-value,
-        .rain-value,
-        .mf-rain,
-        .section-header,
-        .ai-title,
-        .ai-icon,
-        .ensemble-badge {
-            color: var(--sky-blue-light) !important;
-        }
-
-        .rain-track span,
-        .dd-rain-track span,
-        .mf-rainbar span,
-        .range-track span,
-        .dd-temp-track span,
-        .score-bar span {
-            background: linear-gradient(
-                90deg,
-                var(--sky-cyan),
-                var(--sky-blue)
-            ) !important;
-        }
-
-        .forecast-status,
-        .ai-status,
-        .live-badge,
-        .ensemble-badge,
-        .dd-today-badge {
-            background: rgba(59,130,246,.10) !important;
-            border-color: rgba(96,165,250,.18) !important;
-            color: #93C5FD !important;
-        }
-
-        /* AI section */
-        .insight-hero,
-        .ai-reading,
-        .travel-modern,
-        .ai-text {
-            background:
-                linear-gradient(
-                    135deg,
-                    rgba(59,130,246,.10),
-                    rgba(56,189,248,.035)
-                ) !important;
-            border-color: rgba(96,165,250,.14) !important;
-        }
-
-        /* Interactive controls */
-        button,
-        .location-btn,
-        .ask-insight-btn,
-        .search-btn {
-            transition:
-                background .25s ease,
-                border-color .25s ease,
-                transform .25s ease,
-                box-shadow .25s ease;
-        }
-
-        button:hover,
-        .ask-insight-btn:hover,
-        .search-btn:hover {
-            border-color: rgba(96,165,250,.35) !important;
-        }
-
-        /* Status colors */
-        .ensemble-confidence-high {
-            color: var(--sky-good) !important;
-        }
-
-        .ensemble-confidence-moderate {
-            color: var(--sky-warning) !important;
-        }
-
-        .ensemble-confidence-lower {
-            color: var(--sky-danger) !important;
-        }
-
-        /* Loading screen */
-        #loading {
-            background:
-                radial-gradient(
-                    circle at 50% 35%,
-                    rgba(59,130,246,.16),
-                    transparent 34%
-                ),
-                rgba(7,20,38,.90) !important;
-        }
-
-        #loading::before {
-            border-color: rgba(255,255,255,.10) !important;
-            border-top-color: var(--sky-blue-light) !important;
-            border-right-color: var(--sky-cyan) !important;
-        }
-
-        #loading::after {
-            color: var(--sky-blue-light) !important;
-        }
-
-        /* Chat */
-        .chat-window,
-        .chat-header,
-        .chat-input-area {
-            background: var(--sky-card) !important;
-            border-color: rgba(96,165,250,.12) !important;
-        }
-
-        .chat-btn {
-            background: linear-gradient(
-                135deg,
-                var(--sky-blue),
-                #2563EB
-            ) !important;
-        }
-
-        /* Mobile keeps the same hierarchy */
-        @media (max-width: 768px) {
-            body {
-                background:
-                    radial-gradient(
-                        circle at 50% -5%,
-                        rgba(59,130,246,.08),
-                        transparent 34%
-                    ),
-                    var(--sky-bg) !important;
-            }
-        }
-
-</style>
+            body { padding: 14px; }
+            header { align-items: center; padding-bottom: 12px; margin-bottom: 18px; gap: 12px; }
+            .logo-area { font-size: 1.05rem; }
+            .nav-links { order: 3; justify-content: flex-start; gap: 0; overflow-x: auto; width: 100%; padding-bottom: 2px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+            .nav-links::-webkit-scrollbar { display: none; }
+            .nav-links div { flex: 0 0 auto; padding: 10px 16px 11px; min-height: 42px; }
+            .header-right { width: 100%; margin-left: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; }
+            .location-btn { justify-content: center; white-space: nowrap; min-height: 44px; }
+            .search-bar-wrapper { width: 100%; min-width: 0; }
+            .search-bar-wrapper input { min-height: 44px; font-size: 16px; }
+            .dashboard-grid { gap: 14px; }
+            .card { padding: 18px; border-radius: 14px; }
+            .micro-stats { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+            .rain-timeline { grid-template-columns: repeat(2, 1fr); }
+            .forecast-row { grid-template-columns: repeat(2, 1fr); }
+            .glance-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        }
+
+        /* Modern Page Styling Blocks */
+        .modern-page-head { max-width: 1300px; margin: 0 auto 20px; display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; }
+        .modern-page-head h1 { font-size: clamp(1.65rem, 3vw, 2.35rem); letter-spacing: -0.04em; margin: 4px 0 5px; }
+        .modern-page-head p { color: #94a3b8; font-size: .9rem; }
+        .eyebrow { color: #60a5fa; font-size: .68rem; font-weight: 700; letter-spacing: .14em; }
+
+        .forecast-status, .ai-status { display: flex; align-items: center; gap: 8px; color: #94a3b8; font-size: .78rem; background: rgba(255,255,255,.035); border: 1px solid rgba(255,255,255,.07); padding: 9px 12px; border-radius: 999px; white-space: nowrap; }
+        .live-dot, .ai-pulse { width: 7px; height: 7px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 12px rgba(34,197,94,.7); }
+        .ai-pulse { background: #a78bfa; box-shadow: 0 0 12px rgba(167,139,250,.8); }
+
+        .forecast-summary-grid { max-width: 1300px; margin: 0 auto 20px; display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 14px; }
+        .forecast-highlight { min-height: 145px; position: relative; overflow: hidden; }
+        .big-range { font-size: 2rem; font-weight: 650; letter-spacing: -.04em; margin: 7px 0 3px; }
+        .mini-caption { color: #64748b; font-size: .74rem; line-height: 1.45; }
+        .range-track, .rain-meter { height: 6px; background: rgba(255,255,255,.07); border-radius: 99px; overflow: hidden; margin-top: 14px; }
+        .range-track span, .rain-meter span { display: block; height: 100%; width: 0%; border-radius: inherit; background: linear-gradient(90deg,#38bdf8,#3b82f6,#818cf8); transition: width .5s ease; }
+
+        .forecast-main-card, .forecast-detail-card { max-width: 1300px; margin: 0 auto 20px; }
+        .forecast-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 15px; margin-bottom: 16px; }
+        .forecast-legend { display: flex; gap: 12px; color: #64748b; font-size: .7rem; }
+        .forecast-legend span::before { content: "•"; color: #60a5fa; margin-right: 4px; }
+
+        .modern-forecast-list { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+        .modern-forecast-card { background: linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.018)); border: 1px solid rgba(255,255,255,.07); border-radius: 15px; padding: 15px 12px; text-align: center; cursor: pointer; transition: transform .2s ease, border-color .2s ease, background .2s ease; position: relative; overflow: hidden; }
+        .modern-forecast-card:hover, .modern-forecast-card.selected { transform: translateY(-3px); border-color: rgba(96,165,250,.45); background: linear-gradient(180deg, rgba(59,130,246,.12), rgba(255,255,255,.025)); }
+        .modern-forecast-card.today { box-shadow: inset 0 2px 0 #3b82f6; }
+        .mf-day { font-weight: 700; font-size: .88rem; }
+        .mf-date { color: #64748b; font-size: .68rem; margin-top: 3px; }
+        .mf-icon { font-size: 2rem; margin: 13px 0 8px; }
+        .mf-temp { font-size: 1.05rem; font-weight: 700; }
+        .mf-low { color: #64748b; font-weight: 500; margin-left: 4px; }
+        .mf-rain { margin-top: 12px; color: #60a5fa; font-size: .73rem; font-weight: 600; }
+        .mf-rainbar { height: 4px; background: rgba(255,255,255,.06); border-radius: 99px; margin-top: 6px; overflow: hidden; }
+        .mf-rainbar span { display: block; height: 100%; background: #38bdf8; border-radius: inherit; }
+        .mf-condition { color: #94a3b8; font-size: .7rem; margin-top: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        /* Detailed Day Card View Layout */
+        .detailed-forecast-list { display: flex; flex-direction: column; gap: 10px; }
+        .detailed-day-card { position: relative; display: grid; grid-template-columns: minmax(115px, 1.05fr) minmax(120px, .8fr) minmax(170px, 1.1fr) minmax(150px, .9fr); align-items: center; gap: 18px; padding: 16px 18px; border: 1px solid rgba(255,255,255,.07); border-radius: 16px; background: linear-gradient(100deg, rgba(255,255,255,.045), rgba(255,255,255,.018)); overflow: hidden; }
+        .dd-day-name { font-size: .98rem; font-weight: 750; color: #f8fafc; }
+        .dd-date { font-size: .72rem; color: #64748b; }
+        .dd-icon { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 12px; background: rgba(59,130,246,.10); border: 1px solid rgba(96,165,250,.12); font-size: 1.45rem; }
+        .dd-high { font-size: 1.12rem; font-weight: 750; }
+        .dd-low { color: #64748b; font-size: .88rem; }
+        .dd-temp-track, .dd-rain-track { height: 5px; border-radius: 99px; background: rgba(255,255,255,.07); overflow: hidden; }
+        .dd-temp-track span, .dd-rain-track span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #60a5fa, #38bdf8); }
+
+        /* AI Lab Insights layout */
+        .insight-hero { max-width: 1300px; margin: 0 auto 18px; display: flex; align-items: center; gap: 18px; padding: 24px; background: linear-gradient(135deg, rgba(17,24,39,.9), rgba(30,41,59,.65)); border-color: rgba(96,165,250,.16); }
+        .insight-hero-icon { width: 58px; height: 58px; display: grid; place-items: center; border-radius: 16px; font-size: 1.7rem; background: rgba(59,130,246,.13); border: 1px solid rgba(96,165,250,.25); color: #93c5fd; }
+        .insight-grid { max-width: 1300px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+        .insight-wide { grid-column: 1 / -1; }
+        .signal-row, .action-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 11px 12px; border-radius: 11px; background: rgba(255,255,255,.025); border: 1px solid rgba(255,255,255,.05); }
+        .action-row { justify-content: flex-start; }
+        .ai-reading { color: #dbeafe; font-size: .98rem; line-height: 1.8; padding: 6px 0 15px; }
+
+        /* Loading overlay */
+        #loading { position: fixed; inset: 0; z-index: 3000; display: none; flex-direction: column; gap: 12px; align-items: center; justify-content: center; background: rgba(7,20,38,.90); backdrop-filter: blur(14px); color: #cbd5e1; font-size: .88rem; }
+        #loading::before { content: ""; width: 48px; height: 48px; border: 2px solid rgba(255,255,255,.10); border-top-color: #60a5fa; border-radius: 50%; animation: skyLoaderSpin 1s linear infinite; }
+        @keyframes skyLoaderSpin { to { transform: rotate(360deg); } }
+
+        /* Forecast Intelligence Card layout */
+        .forecast-intelligence-card { position: relative; overflow: hidden; background: linear-gradient(145deg, rgba(15,23,42,.92), rgba(15,23,42,.72)); }
+        .forecast-intel-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; margin-bottom: 18px; }
+        .ensemble-badge { padding: 7px 10px; border-radius: 999px; border: 1px solid rgba(96,165,250,.18); background: rgba(59,130,246,.08); color: #93c5fd; font-size: .68rem; font-weight: 700; white-space: nowrap; }
+        .ensemble-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+        .ensemble-metric { padding: 14px; border-radius: 14px; border: 1px solid rgba(255,255,255,.07); background: rgba(255,255,255,.025); }
+        .ensemble-label { color: #64748b; font-size: .67rem; text-transform: uppercase; margin-bottom: 7px; }
+        .ensemble-value { font-size: 1.25rem; font-weight: 800; color: #f8fafc; }
+        .ensemble-explainer { display: flex; gap: 11px; align-items: flex-start; margin-top: 12px; padding: 13px 14px; border-radius: 13px; background: rgba(2,6,23,.24); border: 1px solid rgba(255,255,255,.06); }
+    </style>
 </head>
 <body>
 
@@ -2205,9 +240,9 @@
         <div id="loadingMessage">Detecting high-precision location &amp; fetching telemetry...</div>
     </div>
 
+    <!-- Dashboard View -->
     <div id="view-dashboard" class="view-section active-view">
         <div class="dashboard-grid">
-            
             <div style="display: flex; flex-direction: column; gap: 20px;">
                 <div class="card">
                     <div class="location-title" id="locationDisplay">📍 Detecting Location...</div>
@@ -2268,11 +303,10 @@
                     </div>
                 </div>
             </div>
-
         </div>
     </div>
 
-    <!-- Modern Forecast View -->
+    <!-- Forecast View -->
     <div id="view-forecast" class="view-section">
         <div class="modern-page-head">
             <div>
@@ -2314,14 +348,11 @@
             <div id="modernForecastList" class="modern-forecast-list"></div>
         </div>
 
-
         <div class="card forecast-intelligence-card" id="forecastIntelligenceCard">
             <div class="forecast-intel-head">
                 <div>
                     <div class="section-header">🧠 Forecast Intelligence</div>
-                    <div class="mini-caption">
-                        Multi-model numerical weather guidance
-                    </div>
+                    <div class="mini-caption">Multi-model numerical weather guidance</div>
                 </div>
                 <div class="ensemble-badge" id="ensembleBadge">Checking ECMWF • GFS • ICON…</div>
             </div>
@@ -2332,47 +363,21 @@
                     <div class="ensemble-value" id="ensembleConfidence">--</div>
                     <div class="ensemble-sub" id="ensembleConfidenceNote">Waiting for model guidance</div>
                 </div>
-
                 <div class="ensemble-metric">
                     <div class="ensemble-label">Model spread</div>
                     <div class="ensemble-value"><span id="ensembleSpread">--</span>°C</div>
                     <div class="ensemble-sub">Average temperature uncertainty</div>
                 </div>
-
                 <div class="ensemble-metric">
                     <div class="ensemble-label">Rain probability</div>
                     <div class="ensemble-value"><span id="ensembleRain">--</span>%</div>
                     <div class="ensemble-sub">Peak ensemble precipitation signal</div>
                 </div>
-
                 <div class="ensemble-metric">
                     <div class="ensemble-label">Next 24h range</div>
                     <div class="ensemble-value" id="ensembleRange">--</div>
                     <div class="ensemble-sub">Consensus temperature range</div>
                 </div>
-
-                <div class="ensemble-metric model-consensus-metric">
-                    <div class="ensemble-label">Model agreement</div>
-                    <div class="ensemble-value" id="modelAgreement">--</div>
-                    <div class="ensemble-sub" id="modelNames">ECMWF • GFS • ICON</div>
-                </div>
-            </div>
-
-            <div class="ensemble-explainer">
-                <span class="ensemble-icon">◎</span>
-                <div>
-                    <strong>Why this matters</strong>
-                    <p>
-                        SkySense compares multiple independent numerical weather models. When ECMWF,
-                        GFS and ICON are close together, the forecast is more consistent;
-                        when they diverge, SkySense flags higher uncertainty.
-                    </p>
-                </div>
-            </div>
-
-            <div class="model-disagreement" id="modelDisagreement">
-                <span>Model disagreement</span>
-                <strong id="peakDisagreement">--</strong>
             </div>
         </div>
 
@@ -2382,7 +387,7 @@
         </div>
     </div>
 
-    <!-- Modern AI Insights View -->
+    <!-- AI Insights View -->
     <div id="view-insights" class="view-section">
         <div class="modern-page-head">
             <div>
@@ -2400,7 +405,6 @@
                 <h2 id="insightHeadline">Analyzing your local conditions...</h2>
                 <p id="insightSubline">SkySense is combining temperature, rain, humidity, wind and air-quality signals.</p>
             </div>
-            <div class="confidence-badge" id="insightConfidence">LIVE SIGNAL</div>
         </div>
 
         <div class="insight-grid">
@@ -2408,29 +412,13 @@
                 <div class="section-header">🧠 What SkySense sees</div>
                 <div id="insightSignals" class="signal-list"></div>
             </div>
-
             <div class="card insight-card">
                 <div class="section-header">🎯 Best decisions</div>
                 <div id="insightActions" class="action-list"></div>
             </div>
-
             <div class="card insight-card insight-wide">
                 <div class="section-header">✨ AI Weather Insight</div>
                 <div class="ai-reading" id="detailedAiDisplay"></div>
-                <div class="insight-footer">
-                    <span>Based on current weather + forecast signals</span>
-                    <button class="ask-insight-btn" onclick="toggleChat()">Ask SkySense ↗</button>
-                </div>
-            </div>
-
-            <div class="card insight-card">
-                <div class="section-header">🧳 Travel Advisor</div>
-                <div class="travel-modern" id="modernTravelDisplay">Preparing recommendations...</div>
-            </div>
-
-            <div class="card insight-card">
-                <div class="section-header">🏆 Activity Scores</div>
-                <div id="modernActivityScores" class="activity-score-grid"></div>
             </div>
         </div>
     </div>
@@ -2449,7 +437,6 @@
                 <div class="suggestion-chip" onclick="sendSuggested('What should I do today?')">✨ What should I do today?</div>
                 <div class="suggestion-chip" onclick="sendSuggested('Will it rain tonight?')">Will it rain tonight?</div>
                 <div class="suggestion-chip" onclick="sendSuggested('Can I go cycling tomorrow morning?')">Cycling tomorrow morning?</div>
-                <div class="suggestion-chip" onclick="sendSuggested('Which day is best for a trek?')">Best day for a trek?</div>
             </div>
             <div class="chat-input-area">
                 <input type="text" id="chatInput" placeholder="Ask about the weather..." onkeypress="handleChatEnter(event)">
@@ -2468,75 +455,38 @@
         const cityInput = document.getElementById('cityInput');
         const suggestionsBox = document.getElementById('suggestionsBox');
         let debounceTimer;
-        const loadingMessages = [
-            "Detecting your location...",
-            "Fetching live weather data...",
-            "Analyzing atmospheric conditions...",
-            "Preparing your forecast...",
-            "Calculating AI weather insights..."
-        ];
-        let loadingMessageTimer = null;
-        let loadingMessageIndex = 0;
 
         function showLoading(message) {
             const loader = document.getElementById('loading');
             const text = document.getElementById('loadingMessage');
-
             if (!loader) return;
-
-            loadingMessageIndex = 0;
-            if (text) text.textContent = message || loadingMessages[0];
-
+            if (text) text.textContent = message || "Fetching telemetry...";
             loader.style.display = 'flex';
-
-            clearInterval(loadingMessageTimer);
-            loadingMessageTimer = setInterval(() => {
-                if (!text) return;
-                loadingMessageIndex =
-                    (loadingMessageIndex + 1) % loadingMessages.length;
-                text.textContent = loadingMessages[loadingMessageIndex];
-            }, 1100);
         }
 
         function hideLoading() {
-            clearInterval(loadingMessageTimer);
-            loadingMessageTimer = null;
-
             const loader = document.getElementById('loading');
             if (!loader) return;
-
-            loader.style.opacity = '0';
-            loader.style.transition = 'opacity .25s ease';
-
-            setTimeout(() => {
-                loader.style.display = 'none';
-                loader.style.opacity = '';
-            }, 250);
+            loader.style.display = 'none';
         }
-
-
 
         cityInput.addEventListener('input', function() {
             clearTimeout(debounceTimer);
             const query = this.value.trim();
-            
             if (query.length < 2) {
                 suggestionsBox.style.display = 'none';
                 return;
             }
-
             debounceTimer = setTimeout(async () => {
                 try {
                     const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5`);
                     const data = await res.json();
-                    
                     suggestionsBox.innerHTML = '';
                     if (data.length > 0) {
                         data.forEach(place => {
                             const div = document.createElement('div');
                             div.className = 'suggestion-item';
                             div.innerText = place.display_name;
-                            
                             div.onclick = () => {
                                 cityInput.value = place.display_name.split(',')[0];
                                 suggestionsBox.style.display = 'none';
@@ -2561,12 +511,6 @@
             }
         });
 
-        document.addEventListener('click', (e) => {
-            if (!cityInput.contains(e.target) && !suggestionsBox.contains(e.target)) {
-                suggestionsBox.style.display = 'none';
-            }
-        });
-
         async function getWeatherByName(query) {
             if (!query) return;
             showLoading();
@@ -2574,7 +518,7 @@
                 const response = await fetch(`/api/weather?city=${encodeURIComponent(query)}`);
                 const data = await response.json();
                 if (data.error) {
-                    console.error(data.error);
+                    alert(data.error);
                 } else {
                     updateDashboard(data);
                 }
@@ -2587,39 +531,13 @@
 
         async function getWeatherByCoords(lat, lon, displayName) {
             showLoading();
-
             try {
-                const response = await fetch(
-                    `/api/weather?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}&city=${encodeURIComponent(displayName || 'Precise Coordinates')}`
-                );
-
-                const raw = await response.text();
-
-                let data = {};
-                try {
-                    data = raw ? JSON.parse(raw) : {};
-                } catch (_) {
-                    data = {};
-                }
-
-                if (!response.ok || data.error) {
-                    throw new Error(
-                        data.error ||
-                        `Weather server returned HTTP ${response.status}.`
-                    );
-                }
-
+                const response = await fetch(`/api/weather?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}&city=${encodeURIComponent(displayName || 'Coordinates')}`);
+                const data = await response.json();
+                if (data.error) throw new Error(data.error);
                 updateDashboard(data);
-
             } catch (error) {
-                console.error('SkySense weather error:', error);
-
-                const message = error?.message || 'Unknown error';
-
-                alert(
-                    `SkySense could not load weather.\n\n${message}`
-                );
-
+                alert(`Could not load weather: ${error.message}`);
             } finally {
                 hideLoading();
             }
@@ -2642,74 +560,23 @@
         async function sendChatMessage() {
             const inputField = document.getElementById('chatInput');
             const message = inputField.value.trim();
-
             if (!message) return;
 
             addChatMessage(message, 'user');
             inputField.value = '';
 
-            const typingId = addChatMessage(
-                "Analyzing weather, forecast models, and conditions...",
-                'ai'
-            );
-
-            const controller = new AbortController();
-            const timeout = setTimeout(
-                () => controller.abort(),
-                30000
-            );
+            const typingId = addChatMessage("Analyzing conditions...", 'ai');
 
             try {
                 const response = await fetch('/api/chat', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        message: message,
-                        context: globalChatContext || {}
-                    }),
-                    signal: controller.signal
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: message, context: globalChatContext || {} })
                 });
-
-                const raw = await response.text();
-
-                let data = {};
-                try {
-                    data = raw ? JSON.parse(raw) : {};
-                } catch (_) {
-                    data = {};
-                }
-
-                if (!response.ok) {
-                    throw new Error(
-                        data.reply ||
-                        `AI server returned HTTP ${response.status}.`
-                    );
-                }
-
-                document.getElementById(typingId).innerText =
-                    data.reply ||
-                    "I didn't receive a response. Please try again.";
-
+                const data = await response.json();
+                document.getElementById(typingId).innerText = data.reply || "No response received.";
             } catch (err) {
-                console.error("SkySense chatbot error:", err);
-
-                let messageText =
-                    "Unable to connect to SkySense AI.";
-
-                if (err.name === "AbortError") {
-                    messageText =
-                        "SkySense AI is taking too long to respond. Please try again.";
-                } else if (err.message) {
-                    messageText = err.message;
-                }
-
-                document.getElementById(typingId).innerText = messageText;
-
-            } finally {
-                clearTimeout(timeout);
+                document.getElementById(typingId).innerText = "Unable to connect to AI assistant.";
             }
         }
 
@@ -2719,175 +586,23 @@
             msgDiv.innerText = text;
             const id = 'msg-' + Date.now();
             msgDiv.id = id;
-            
             const container = document.getElementById('chatMessages');
             container.appendChild(msgDiv);
             container.scrollTop = container.scrollHeight;
             return id;
         }
 
-        // High-Precision Geolocation Tracking Function
-        // Never silently switch to an unrelated city when location fails.
         function detectUserLocation() {
-            const DEFAULT_CITY = 'Ahmednagar';
-
-            function useLastKnownLocation() {
-                try {
-                    const saved = localStorage.getItem('skysense_last_location');
-
-                    if (saved) {
-                        const location = JSON.parse(saved);
-
-                        if (
-                            location &&
-                            Number.isFinite(Number(location.lat)) &&
-                            Number.isFinite(Number(location.lon))
-                        ) {
-                            getWeatherByCoords(
-                                Number(location.lat),
-                                Number(location.lon),
-                                location.name || DEFAULT_CITY
-                            );
-                            return true;
-                        }
-                    }
-                } catch (err) {
-                    console.warn('Could not read saved location:', err);
-                }
-
-                return false;
-            }
-
+            const DEFAULT_CITY = 'Pune';
             if (!navigator.geolocation) {
-                if (!useLastKnownLocation()) {
-                    getWeatherByName(DEFAULT_CITY);
-                }
+                getWeatherByName(DEFAULT_CITY);
                 return;
             }
-
             showLoading();
-
-            const options = {
-                enableHighAccuracy: true,
-                timeout: 15000,
-                maximumAge: 300000
-            };
-
             navigator.geolocation.getCurrentPosition(
-                async function(position) {
-                    const lat = position.coords.latitude;
-                    const lon = position.coords.longitude;
-
-                    try {
-                        const geoRes = await fetch(
-                            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}&zoom=18&addressdetails=1`,
-                            {
-                                headers: {
-                                    'Accept': 'application/json'
-                                }
-                            }
-                        );
-
-                        if (!geoRes.ok) {
-                            throw new Error(
-                                `Reverse geocoding failed: HTTP ${geoRes.status}`
-                            );
-                        }
-
-                        const geoData = await geoRes.json();
-                        const address = geoData.address || {};
-
-                        const neighborhood =
-                            address.suburb ||
-                            address.neighbourhood ||
-                            address.residential ||
-                            address.city_district;
-
-                        const city =
-                            address.city ||
-                            address.town ||
-                            address.village ||
-                            address.municipality ||
-                            address.county;
-
-                        let preciseLocationName =
-                            city || DEFAULT_CITY;
-
-                        if (neighborhood && city) {
-                            preciseLocationName =
-                                `${neighborhood}, ${city}`;
-                        } else if (neighborhood) {
-                            preciseLocationName = neighborhood;
-                        }
-
-                        // Save exact coordinates so a temporary location
-                        // permission/geolocation failure does not switch
-                        // the user to Pune or another unrelated city.
-                        try {
-                            localStorage.setItem(
-                                'skysense_last_location',
-                                JSON.stringify({
-                                    lat,
-                                    lon,
-                                    name: preciseLocationName,
-                                    savedAt: Date.now()
-                                })
-                            );
-                        } catch (err) {
-                            console.warn(
-                                'Could not save location:',
-                                err
-                            );
-                        }
-
-                        getWeatherByCoords(
-                            lat,
-                            lon,
-                            preciseLocationName
-                        );
-
-                    } catch (err) {
-                        console.warn(
-                            'Reverse geocoding failed:',
-                            err
-                        );
-
-                        // GPS coordinates are still authoritative even if
-                        // reverse geocoding fails.
-                        try {
-                            localStorage.setItem(
-                                'skysense_last_location',
-                                JSON.stringify({
-                                    lat,
-                                    lon,
-                                    name: DEFAULT_CITY,
-                                    savedAt: Date.now()
-                                })
-                            );
-                        } catch (_) {}
-
-                        getWeatherByCoords(
-                            lat,
-                            lon,
-                            DEFAULT_CITY
-                        );
-                    }
-                },
-
-                function(error) {
-                    console.warn(
-                        'Browser location unavailable:',
-                        error.code,
-                        error.message
-                    );
-
-                    // IMPORTANT: no more getWeatherByName('Pune').
-                    if (!useLastKnownLocation()) {
-                        getWeatherByName(DEFAULT_CITY);
-                    }
-                },
-
-                options
+                pos => getWeatherByCoords(pos.coords.latitude, pos.coords.longitude, 'Current Location'),
+                () => getWeatherByName(DEFAULT_CITY),
+                { timeout: 10000 }
             );
         }
 
@@ -2917,296 +632,20 @@
                 data: {
                     labels: labels,
                     datasets: [{
-                        label: 'Temperature (°C)', data: temps, borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                        borderWidth: 2, pointBackgroundColor: '#ffffff', pointBorderColor: '#3b82f6', pointRadius: 4, fill: true, tension: 0.4
+                        data: temps, borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        borderWidth: 2, pointRadius: 4, fill: true, tension: 0.4
                     }]
                 },
-                options: { responsive: true, maintainAspectRatio: false, animation: { duration: 650, easing: 'easeOutQuart' }, plugins: { legend: { display: false } },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
                     scales: { y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } }, x: { grid: { display: false }, ticks: { color: '#94a3b8' } } }
                 }
             });
         }
 
-
-        function getForecastWeatherIcon(description) {
-            const d = (description || '').toLowerCase();
-            if (d.includes('thunder')) return '⛈️';
-            if (d.includes('rain') || d.includes('drizzle')) return '🌧️';
-            if (d.includes('snow')) return '❄️';
-            if (d.includes('mist') || d.includes('fog') || d.includes('haze')) return '🌫️';
-            if (d.includes('cloud')) return '☁️';
-            return '☀️';
-        }
-
-        function getPlanSignal(maxRain, avgTemp) {
-            if (maxRain >= 70) return ['Rain-aware', 'Keep an umbrella or indoor backup plan.'];
-            if (avgTemp >= 35) return ['Hot', 'Plan outdoor activities around cooler hours.'];
-            if (avgTemp <= 10) return ['Cool', 'A light warm layer may be useful.'];
-            return ['Favorable', 'Good overall conditions for flexible plans.'];
-        }
-
-        function renderModernForecast(forecast) {
-            const container = document.getElementById('modernForecastList');
-            if (!container) return;
-            container.innerHTML = '';
-
-            const days = (forecast || []).slice(0, 5);
-            if (!days.length) {
-                container.innerHTML = '<div class="mini-caption">Forecast data is currently unavailable.</div>';
-                return;
-            }
-
-            days.forEach((day, index) => {
-                const card = document.createElement('div');
-                card.className = 'modern-forecast-card' + (index === 0 ? ' today selected' : '');
-                const rain = Number.isFinite(Number(day.pop)) ? Math.max(0, Math.min(100, Number(day.pop))) : null;
-                card.innerHTML = `
-                    <div class="mf-day">${index === 0 ? 'Today' : (day.day || '--')}</div>
-                    <div class="mf-date">${day.date || '--'}</div>
-                    <div class="mf-icon">${getForecastWeatherIcon(day.description)}</div>
-                    <div class="mf-temp">${day.temp ?? '--'}° <span class="mf-low">${day.min_temp ?? '--'}°</span></div>
-                    <div class="mf-rain">💧 ${rain === null ? "--" : rain + "%"} rain</div>
-                    <div class="mf-rainbar"><span style="width:${rain === null ? 0 : rain}%"></span></div>
-                    <div class="mf-condition">${day.description || 'Unknown'}</div>
-                `;
-                card.addEventListener('click', () => {
-                    document.querySelectorAll('.modern-forecast-card').forEach(c => c.classList.remove('selected'));
-                    card.classList.add('selected');
-                });
-                container.appendChild(card);
-            });
-
-            const temps = days.map(d => Number(d.temp)).filter(Number.isFinite);
-            const lows = days.map(d => Number(d.min_temp)).filter(Number.isFinite);
-            const highsMax = temps.length ? Math.max(...temps) : 0;
-            const lowsMin = lows.length ? Math.min(...lows) : 0;
-            const rainValues = days.map(d => Number(d.pop)).filter(Number.isFinite); const maxRain = rainValues.length ? Math.max(...rainValues) : (parseInt(document.getElementById('rainDisplay')?.textContent) || 0);
-            const avgTemp = temps.length ? temps.reduce((a,b) => a+b, 0) / temps.length : 0;
-
-            document.getElementById('forecastRangeText').textContent = `${highsMax}° / ${lowsMin}°`;
-            document.getElementById('forecastRangeCaption').textContent = 'Warmest high / coolest low across the next 5 days';
-            document.getElementById('forecastRangeFill').style.width = `${Math.min(100, Math.max(10, ((highsMax + 10) / 55) * 100))}%`;
-
-            document.getElementById('forecastRainText').textContent = `${maxRain}%`;
-            document.getElementById('forecastRainCaption').textContent = 'Highest rain probability in the displayed forecast';
-            document.getElementById('forecastRainFill').style.width = `${maxRain}%`;
-
-            const plan = getPlanSignal(maxRain, avgTemp);
-            document.getElementById('forecastPlanText').textContent = plan[0];
-            document.getElementById('forecastPlanCaption').textContent = plan[1];
-        }
-
-        function renderModernInsights(data) {
-            const signals = document.getElementById('insightSignals');
-            const actions = document.getElementById('insightActions');
-            const scores = document.getElementById('modernActivityScores');
-
-            if (!signals || !actions || !scores) return;
-
-            const rain = parseInt(data.chance_of_rain) || 0;
-            const temp = Number(data.temperature);
-            const humidity = Number(data.humidity);
-            const wind = Math.round(Number(data.wind_speed) * 3.6);
-            const aqi = data.aqi || 'Unknown';
-
-            const comfort = temp >= 34 ? 'Warm' : temp <= 10 ? 'Cool' : 'Comfortable';
-            const rainSignal = rain >= 70 ? 'High' : rain >= 40 ? 'Moderate' : 'Low';
-
-            signals.innerHTML = `
-                <div class="signal-row"><span class="signal-label">Temperature</span><span class="signal-value">${Math.round(temp)}°C · ${comfort}</span></div>
-                <div class="signal-row"><span class="signal-label">Rain probability</span><span class="signal-value">${rain}% · ${rainSignal}</span></div>
-                <div class="signal-row"><span class="signal-label">Humidity</span><span class="signal-value">${humidity}%</span></div>
-                <div class="signal-row"><span class="signal-label">Wind</span><span class="signal-value">${wind} km/h · ${data.wind_dir || '--'}</span></div>
-                <div class="signal-row"><span class="signal-label">Air quality</span><span class="signal-value">${aqi}</span></div>
-            `;
-
-            const actionItems = [];
-            if (rain >= 60) actionItems.push(['☔', 'Carry rain protection and keep an indoor backup plan.']);
-            else actionItems.push(['☀️', 'Outdoor plans have a lower chance of rain disruption.']);
-            if (temp >= 33) actionItems.push(['💧', 'Stay hydrated and avoid long exposure during peak heat.']);
-            else if (temp <= 12) actionItems.push(['🧥', 'A light warm layer may make outdoor plans more comfortable.']);
-            else actionItems.push(['🌤️', 'Temperature looks broadly comfortable for outdoor activity.']);
-            if (wind >= 35) actionItems.push(['💨', 'Expect noticeable wind; take extra care on two-wheelers.']);
-            else actionItems.push(['🚶', 'Wind conditions look relatively manageable.']);
-
-            actions.innerHTML = actionItems.map(item => `
-                <div class="action-row">
-                    <div class="action-icon">${item[0]}</div>
-                    <div class="action-text">${item[1]}</div>
-                </div>
-            `).join('');
-
-            const insightText = (data.ai_summary || 'Weather analysis is ready.');
-            document.getElementById('insightHeadline').textContent =
-                rain >= 60 ? 'Plan around changing conditions.' :
-                temp >= 34 ? 'Heat is the main factor today.' :
-                'Conditions look broadly favorable.';
-
-            document.getElementById('insightSubline').textContent =
-                `${data.city || 'Your location'} · ${Math.round(temp)}°C · ${data.description || 'Current conditions'}`;
-
-            document.getElementById('insightConfidence').textContent = 'LIVE WEATHER SIGNAL';
-            document.getElementById('detailedAiDisplay').innerHTML = insightText;
-            document.getElementById('modernTravelDisplay').textContent =
-                data.travel_advice || 'Travel recommendations will appear here.';
-
-            const activityMap = [
-                ['🚴 Cycling', data.activities?.cycling],
-                ['🏃 Running', data.activities?.running],
-                ['🥾 Hiking', data.activities?.hiking],
-                ['📸 Photography', data.activities?.photography],
-                ['🏍️ Motorcycling', data.activities?.motorcycling]
-            ];
-
-            scores.innerHTML = activityMap.map(([label, value]) => {
-                const match = String(value || '').match(/(\d+(?:\.\d+)?)/);
-                const score = match ? Math.max(0, Math.min(10, Number(match[1]))) : 0;
-                return `
-                    <div class="modern-score">
-                        <div class="modern-score-top"><span>${label}</span><span class="score-number">${value || '--/10'}</span></div>
-                        <div class="score-bar"><span style="width:${score * 10}%"></span></div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-
-        async function loadForecastIntelligence(data) {
-            const card = document.getElementById('forecastIntelligenceCard');
-
-            if (!card || !data?.latitude || !data?.longitude) {
-                return;
-            }
-
-            const badge = document.getElementById('ensembleBadge');
-            const confidence = document.getElementById('ensembleConfidence');
-            const confidenceNote = document.getElementById('ensembleConfidenceNote');
-            const spread = document.getElementById('ensembleSpread');
-            const agreement = document.getElementById('modelAgreement');
-            const modelNames = document.getElementById('modelNames');
-            const peakDisagreement = document.getElementById('peakDisagreement');
-            const rain = document.getElementById('ensembleRain');
-            const range = document.getElementById('ensembleRange');
-
-            try {
-                const response = await fetch(
-                    `/api/forecast-intelligence?lat=${encodeURIComponent(data.latitude)}&lon=${encodeURIComponent(data.longitude)}`
-                );
-
-                const intel = await response.json();
-
-                // Give the chatbot the same model-consensus intelligence
-                // that is displayed in the Forecast Intelligence card.
-                if (window.currentWeatherData) {
-                    window.currentWeatherData.forecast_intelligence = intel;
-                    globalChatContext = { ...window.currentWeatherData };
-                }
-
-                badge.textContent = `Multi-model • ${intel.model_count || 0} models`;
-
-                if (!response.ok || intel.error) {
-                    throw new Error(intel.error || 'Forecast intelligence unavailable');
-                }
-
-                confidence.textContent = intel.confidence || '--';
-                confidenceNote.textContent =
-                    intel.confidence_note || 'Model uncertainty estimate';
-
-                confidence.classList.remove(
-                    'ensemble-confidence-high',
-                    'ensemble-confidence-moderate',
-                    'ensemble-confidence-lower'
-                );
-
-                if (intel.confidence === 'High') {
-                    confidence.classList.add('ensemble-confidence-high');
-                } else if (intel.confidence === 'Moderate') {
-                    confidence.classList.add('ensemble-confidence-moderate');
-                } else {
-                    confidence.classList.add('ensemble-confidence-lower');
-                }
-
-                if (agreement) {
-                    agreement.textContent = intel.agreement || '--';
-                    agreement.classList.remove(
-                        'ensemble-confidence-high',
-                        'ensemble-confidence-moderate',
-                        'ensemble-confidence-lower'
-                    );
-
-                    if (intel.agreement === 'Strong') {
-                        agreement.classList.add('ensemble-confidence-high');
-                    } else if (intel.agreement === 'Moderate') {
-                        agreement.classList.add('ensemble-confidence-moderate');
-                    } else {
-                        agreement.classList.add('ensemble-confidence-lower');
-                    }
-                }
-
-                if (modelNames && Array.isArray(intel.models_available)) {
-                    modelNames.textContent = intel.models_available.join(' • ');
-                }
-
-                if (peakDisagreement) {
-                    const disagreement = Number(intel.max_temperature_spread);
-                    peakDisagreement.textContent =
-                        Number.isFinite(disagreement)
-                            ? `${disagreement.toFixed(1)}°C max spread`
-                            : '--';
-                }
-
-                spread.textContent =
-                    Number.isFinite(Number(intel.average_temperature_spread))
-                        ? Number(intel.average_temperature_spread).toFixed(1)
-                        : '--';
-
-                rain.textContent =
-                    Number.isFinite(Number(intel.peak_ensemble_rain_probability))
-                        ? Math.round(Number(intel.peak_ensemble_rain_probability))
-                        : '--';
-
-                const low = Number(intel.next_24_low);
-                const high = Number(intel.next_24_high);
-
-                range.textContent =
-                    Number.isFinite(low) && Number.isFinite(high)
-                        ? `${low.toFixed(0)}°–${high.toFixed(0)}°C`
-                        : '--';
-
-                card.animate(
-                    [
-                        { opacity: .65, transform: 'translateY(5px)' },
-                        { opacity: 1, transform: 'translateY(0)' }
-                    ],
-                    {
-                        duration: 420,
-                        easing: 'cubic-bezier(.22,1,.36,1)'
-                    }
-                );
-
-            } catch (error) {
-                console.warn('Forecast intelligence:', error);
-
-                badge.textContent = 'Guidance unavailable';
-                confidence.textContent = '--';
-                confidenceNote.textContent =
-                    error?.message || 'Unable to retrieve model guidance';
-
-                if (agreement) agreement.textContent = '--';
-                if (modelNames) modelNames.textContent = 'ECMWF • GFS • ICON';
-                if (peakDisagreement) peakDisagreement.textContent = '--';
-
-                spread.textContent = '--';
-                rain.textContent = '--';
-                range.textContent = '--';
-            }
-        }
-
         function updateDashboard(data) {
             window.currentWeatherData = { ...data };
             document.getElementById('locationDisplay').innerText = `📍 ${data.city}`;
-            const updateTime = document.getElementById('updateTime');
-            if (updateTime) updateTime.innerText = `Updated ${new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}`;
+            document.getElementById('updateTime').innerText = `Updated ${new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}`;
             document.getElementById('chatCityName').innerText = data.city;
             document.getElementById('tempDisplay').innerText = Math.round(data.temperature) + '°';
             document.getElementById('descDisplay').innerText = data.description;
@@ -3221,10 +660,8 @@
             document.getElementById('rainDisplay').innerText = data.chance_of_rain;
 
             globalChatContext = { ...data };
-
-            let cleanInsight = data.ai_summary.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-            document.getElementById('aiDisplay').innerHTML = cleanInsight;
-            document.getElementById('detailedAiDisplay').innerHTML = cleanInsight;
+            document.getElementById('aiDisplay').innerHTML = data.ai_summary;
+            document.getElementById('detailedAiDisplay').innerHTML = data.ai_summary;
             document.getElementById('travelDisplay').innerText = data.travel_advice;
 
             document.getElementById('scoreCycling').innerText = data.activities.cycling;
@@ -3239,94 +676,21 @@
                 data.hourly_rain.forEach(slot => {
                     const slotDiv = document.createElement('div');
                     slotDiv.className = 'rain-slot';
-                    slotDiv.innerHTML = `
-                        <div class="rain-time">${slot.time}</div>
-                        <div class="rain-chance">${slot.pop}%</div>
-                        <div style="font-size: 0.7rem; color: #94a3b8; margin-top:2px;">${slot.desc}</div>
-                    `;
+                    slotDiv.innerHTML = `<div class="rain-time">${slot.time}</div><div class="rain-chance">${slot.pop}%</div><div style="font-size: 0.7rem; color: #94a3b8;">${slot.desc}</div>`;
                     rainTimelineContainer.appendChild(slotDiv);
                 });
             }
 
             const forecastRow = document.getElementById('forecastRow');
             forecastRow.innerHTML = '';
-            const detailedForecastList = document.getElementById('detailedForecastList');
-            detailedForecastList.innerHTML = '';
-
             data.forecast.slice(0, 5).forEach((day, index) => {
                 const card = document.createElement('div');
                 card.className = 'forecast-card';
-                const overviewRain = Number.isFinite(Number(day.pop)) ? Math.max(0, Math.min(100, Number(day.pop))) : 0;
-                card.innerHTML = `<div class="f-day">${index === 0 ? 'Today' : day.day}</div><div class="f-date">${day.date}</div><div style="font-size:1.2rem;margin:10px 0;">🌤️</div><div class="f-temps"><span class="f-high">${day.temp}°</span><span class="f-low">${day.min_temp}°</span></div><div style="margin-top:8px;color:#60a5fa;font-size:.72rem;font-weight:600;">💧 ${overviewRain}% rain</div>`;
+                card.innerHTML = `<div class="f-day">${index === 0 ? 'Today' : day.day}</div><div class="f-date">${day.date}</div><div style="font-size:1.2rem;margin:10px 0;">🌤️</div><div class="f-temps"><span class="f-high">${day.temp}°</span><span class="f-low">${day.min_temp}°</span></div>`;
                 forecastRow.appendChild(card);
-                
-                const row = document.createElement('div');
-                row.className = 'detailed-day-card';
-
-                const rain = Number.isFinite(Number(day.pop))
-                    ? Math.max(0, Math.min(100, Number(day.pop)))
-                    : 0;
-
-                const high = Number(day.temp);
-                const low = Number(day.min_temp);
-
-                const tempWidth = Number.isFinite(high) && Number.isFinite(low)
-                    ? Math.max(18, Math.min(100, ((high - low + 4) / 20) * 100))
-                    : 35;
-
-                const rainCaption =
-                    rain >= 70 ? 'High rain chance' :
-                    rain >= 40 ? 'Possible showers' :
-                    rain >= 20 ? 'Small rain chance' :
-                    'Low rain chance';
-
-                row.innerHTML = `
-                    <div class="dd-day">
-                        ${index === 0 ? '<span class="dd-today-badge">Today</span>' : ''}
-                        <div class="dd-day-name">${day.day || '--'}</div>
-                        <div class="dd-date">${day.date || '--'}</div>
-                    </div>
-
-                    <div class="dd-condition">
-                        <div class="dd-icon">${getForecastWeatherIcon(day.description)}</div>
-                        <div class="dd-condition-text">
-                            <div class="dd-condition-title">${day.description || 'Unknown'}</div>
-                            <div class="dd-condition-sub">Daily outlook</div>
-                        </div>
-                    </div>
-
-                    <div class="dd-temperature">
-                        <div class="dd-temp-line">
-                            <span class="dd-high">${Number.isFinite(high) ? high : '--'}°C</span>
-                            <span class="dd-low">${Number.isFinite(low) ? low : '--'}°C</span>
-                        </div>
-                        <div class="dd-temp-track">
-                            <span style="width:${tempWidth}%"></span>
-                        </div>
-                    </div>
-
-                    <div class="dd-rain">
-                        <div class="dd-rain-top">
-                            <span class="dd-rain-label">💧 Peak rain chance</span>
-                            <span class="dd-rain-value">${rain}%</span>
-                        </div>
-                        <div class="dd-rain-track">
-                            <span style="width:${rain}%"></span>
-                        </div>
-                        <div class="dd-rain-caption">${rainCaption}</div>
-                    </div>
-                `;
-
-                detailedForecastList.appendChild(row);
             });
 
             updateTrendChart(data.forecast);
-            renderModernForecast(data.forecast);
-            renderModernInsights(data);
-
-            // Fetch probabilistic ensemble guidance separately.
-            // This does not consume Groq/Gemini chatbot quota.
-            loadForecastIntelligence(data);
         }
     </script>
 </body>
