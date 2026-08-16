@@ -2073,7 +2073,7 @@
                 <div>
                     <div class="section-header">🧠 Forecast Intelligence</div>
                     <div class="mini-caption">
-                        Probabilistic guidance from an ECMWF ensemble
+                        Multi-model numerical weather guidance
                     </div>
                 </div>
                 <div class="ensemble-badge" id="ensembleBadge">Loading…</div>
@@ -2101,7 +2101,13 @@
                 <div class="ensemble-metric">
                     <div class="ensemble-label">Next 24h range</div>
                     <div class="ensemble-value" id="ensembleRange">--</div>
-                    <div class="ensemble-sub">10th–90th percentile guidance</div>
+                    <div class="ensemble-sub">Consensus temperature range</div>
+                </div>
+
+                <div class="ensemble-metric model-consensus-metric">
+                    <div class="ensemble-label">Model agreement</div>
+                    <div class="ensemble-value" id="modelAgreement">--</div>
+                    <div class="ensemble-sub" id="modelNames">ECMWF • GFS • ICON</div>
                 </div>
             </div>
 
@@ -2110,12 +2116,16 @@
                 <div>
                     <strong>Why this matters</strong>
                     <p>
-                        Instead of relying on one forecast run, SkySense looks at
-                        many slightly different model simulations. A tighter spread
-                        generally means the model members agree more closely; a wider
-                        spread means the forecast is more uncertain.
+                        SkySense compares multiple independent numerical weather models. When ECMWF,
+                        GFS and ICON are close together, the forecast is more consistent;
+                        when they diverge, SkySense flags higher uncertainty.
                     </p>
                 </div>
+            </div>
+
+            <div class="model-disagreement" id="modelDisagreement">
+                <span>Model disagreement</span>
+                <strong id="peakDisagreement">--</strong>
             </div>
         </div>
 
@@ -2631,11 +2641,14 @@
             const confidence = document.getElementById('ensembleConfidence');
             const confidenceNote = document.getElementById('ensembleConfidenceNote');
             const spread = document.getElementById('ensembleSpread');
+            const agreement = document.getElementById('modelAgreement');
+            const modelNames = document.getElementById('modelNames');
+            const peakDisagreement = document.getElementById('peakDisagreement');
             const rain = document.getElementById('ensembleRain');
             const range = document.getElementById('ensembleRange');
 
             try {
-                badge.textContent = 'ECMWF • 51 members';
+                badge.textContent = `Multi-model • ${intel.model_count || 0} models`;
 
                 const response = await fetch(
                     `/api/forecast-intelligence?lat=${encodeURIComponent(data.latitude)}&lon=${encodeURIComponent(data.longitude)}`
@@ -2665,9 +2678,38 @@
                     confidence.classList.add('ensemble-confidence-lower');
                 }
 
+                if (agreement) {
+                    agreement.textContent = intel.agreement || '--';
+                    agreement.classList.remove(
+                        'ensemble-confidence-high',
+                        'ensemble-confidence-moderate',
+                        'ensemble-confidence-lower'
+                    );
+
+                    if (intel.agreement === 'Strong') {
+                        agreement.classList.add('ensemble-confidence-high');
+                    } else if (intel.agreement === 'Moderate') {
+                        agreement.classList.add('ensemble-confidence-moderate');
+                    } else {
+                        agreement.classList.add('ensemble-confidence-lower');
+                    }
+                }
+
+                if (modelNames && Array.isArray(intel.models_available)) {
+                    modelNames.textContent = intel.models_available.join(' • ');
+                }
+
+                if (peakDisagreement) {
+                    const disagreement = Number(intel.max_temperature_spread);
+                    peakDisagreement.textContent =
+                        Number.isFinite(disagreement)
+                            ? `${disagreement.toFixed(1)}°C max spread`
+                            : '--';
+                }
+
                 spread.textContent =
-                    Number.isFinite(Number(intel.mean_temperature_spread))
-                        ? Number(intel.mean_temperature_spread).toFixed(1)
+                    Number.isFinite(Number(intel.average_temperature_spread))
+                        ? Number(intel.average_temperature_spread).toFixed(1)
                         : '--';
 
                 rain.textContent =
@@ -2675,8 +2717,8 @@
                         ? Math.round(Number(intel.peak_ensemble_rain_probability))
                         : '--';
 
-                const low = Number(intel.temperature_p10);
-                const high = Number(intel.temperature_p90);
+                const low = Number(intel.next_24_low);
+                const high = Number(intel.next_24_high);
 
                 range.textContent =
                     Number.isFinite(low) && Number.isFinite(high)
@@ -2699,7 +2741,9 @@
 
                 badge.textContent = 'Guidance unavailable';
                 confidence.textContent = '--';
-                confidenceNote.textContent = 'Unable to retrieve ensemble guidance';
+                confidenceNote.textContent = 'Unable to retrieve model guidance';
+                if (agreement) agreement.textContent = '--';
+                if (modelNames) modelNames.textContent = 'ECMWF • GFS • ICON';
                 spread.textContent = '--';
                 rain.textContent = '--';
                 range.textContent = '--';
