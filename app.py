@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify, render_template
 import requests
 import os
 import datetime
-from google import genai
+from groq import Groq
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -13,20 +13,20 @@ app = Flask(__name__)
 # CONFIGURATION
 # ==========================================================
 
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 OPENWEATHER_API_KEY = os.getenv("OPENWEATHER_API_KEY")
 
-if not GEMINI_API_KEY:
-    raise RuntimeError("GEMINI_API_KEY is not configured.")
+if not GROQ_API_KEY:
+    raise RuntimeError("GROQ_API_KEY is not configured.")
 
 if not OPENWEATHER_API_KEY:
     raise RuntimeError("OPENWEATHER_API_KEY is not configured.")
 
-# Gemini is now used ONLY by the chatbot.
-# /api/weather does NOT call Gemini anymore.
-client = genai.Client(api_key=GEMINI_API_KEY)
+# Groq is used ONLY by the chatbot.
+# /api/weather does NOT call Groq.
+client = Groq(api_key=GROQ_API_KEY)
 
-GEMINI_MODEL = "gemini-3.5-flash"
+GROQ_MODEL = "llama-3.3-70b-versatile"
 
 
 # ==========================================================
@@ -34,15 +34,31 @@ GEMINI_MODEL = "gemini-3.5-flash"
 # ==========================================================
 
 def generate_ai_text(prompt):
-    response = client.models.generate_content(
-        model=GEMINI_MODEL,
-        contents=prompt
+    response = client.chat.completions.create(
+        model=GROQ_MODEL,
+        messages=[
+            {
+                "role": "system",
+                "content": (
+                    "You are SkySense AI, a helpful, accurate and friendly "
+                    "AI assistant. Answer the user's question naturally."
+                )
+            },
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ],
+        temperature=0.4,
+        max_tokens=500
     )
 
-    if not response or not response.text:
-        raise RuntimeError("Gemini returned an empty response.")
+    reply = response.choices[0].message.content
 
-    return response.text.strip()
+    if not reply:
+        raise RuntimeError("Groq returned an empty response.")
+
+    return reply.strip()
 
 
 # ==========================================================
@@ -129,12 +145,12 @@ USER QUESTION:
     except Exception as e:
 
         print(
-            f"Gemini Chat Error: {type(e).__name__}: {e}",
+            f"Groq Chat Error: {type(e).__name__}: {e}",
             flush=True
         )
 
         # Specific response for quota exhaustion
-        if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
+        if "429" in str(e) or "rate_limit" in str(e).lower():
 
             return jsonify({
                 "reply": (
