@@ -2155,89 +2155,6 @@
             }
         }
 
-
-        /* =========================================================
-           LOCATION SEARCH — VERTICAL DROPDOWN
-           ========================================================= */
-        #suggestions,
-        #suggestionsBox,
-        .suggestions-box {
-            display: none;
-            flex-direction: column !important;
-            flex-wrap: nowrap !important;
-            align-items: stretch !important;
-            position: absolute !important;
-            top: calc(100% + 8px) !important;
-            left: 0 !important;
-            right: 0 !important;
-            width: 100% !important;
-            max-height: 320px !important;
-            overflow-y: auto !important;
-            overflow-x: hidden !important;
-            z-index: 9999 !important;
-            padding: 6px !important;
-            gap: 2px !important;
-            box-sizing: border-box !important;
-            border-radius: 12px !important;
-            background: rgba(13, 27, 46, 0.98) !important;
-            border: 1px solid rgba(96, 165, 250, 0.16) !important;
-            box-shadow: 0 18px 45px rgba(0, 0, 0, 0.38) !important;
-            backdrop-filter: blur(16px) !important;
-        }
-
-        #suggestions .suggestion-item,
-        #suggestionsBox .suggestion-item,
-        .suggestions-box .suggestion-item,
-        .suggestion-item {
-            display: block !important;
-            flex: 0 0 auto !important;
-            width: 100% !important;
-            min-width: 0 !important;
-            box-sizing: border-box !important;
-            padding: 11px 13px !important;
-            margin: 0 !important;
-            text-align: left !important;
-            white-space: normal !important;
-            overflow: hidden !important;
-            text-overflow: ellipsis !important;
-            line-height: 1.35 !important;
-            cursor: pointer !important;
-            border-radius: 8px !important;
-            color: #F8FAFC !important;
-            background: transparent !important;
-        }
-
-        .suggestion-item:hover,
-        .suggestion-item:focus {
-            background: rgba(59, 130, 246, 0.16) !important;
-            color: #FFFFFF !important;
-        }
-
-        @media (max-width: 768px) {
-            #suggestions,
-            #suggestionsBox,
-            .suggestions-box {
-                max-height: 260px !important;
-            }
-
-            .suggestion-item {
-                padding: 12px !important;
-            }
-        }
-
-
-        #suggestions,
-        #suggestionsBox,
-        .suggestions-box {
-            scrollbar-width: thin;
-        }
-
-        .search-container,
-        .location-search,
-        .search-wrapper {
-            position: relative !important;
-        }
-
 </style>
 </head>
 <body>
@@ -2785,7 +2702,6 @@
         }
 
         // High-Precision Geolocation Tracking Function
-        // Never silently switch to an unrelated city when location fails.
         function detectUserLocation() {
             const DEFAULT_CITY = 'Ahmednagar';
 
@@ -2793,24 +2709,27 @@
                 try {
                     const saved = localStorage.getItem('skysense_last_location');
 
-                    if (saved) {
-                        const location = JSON.parse(saved);
+                    if (!saved) return false;
 
-                        if (
-                            location &&
-                            Number.isFinite(Number(location.lat)) &&
-                            Number.isFinite(Number(location.lon))
-                        ) {
-                            getWeatherByCoords(
-                                Number(location.lat),
-                                Number(location.lon),
-                                location.name || DEFAULT_CITY
-                            );
-                            return true;
-                        }
+                    const location = JSON.parse(saved);
+
+                    if (
+                        location &&
+                        Number.isFinite(Number(location.lat)) &&
+                        Number.isFinite(Number(location.lon))
+                    ) {
+                        getWeatherByCoords(
+                            Number(location.lat),
+                            Number(location.lon),
+                            location.name || DEFAULT_CITY
+                        );
+                        return true;
                     }
                 } catch (err) {
-                    console.warn('Could not read saved location:', err);
+                    console.warn(
+                        'Could not read saved location:',
+                        err
+                    );
                 }
 
                 return false;
@@ -2841,20 +2760,22 @@
                         `SkySense GPS: ${lat}, ${lon} | accuracy: ${accuracy}m`
                     );
 
-                    // Desktop browsers can sometimes return an IP/Wi-Fi
-                    // location several kilometres away. If the reported
-                    // accuracy is poor, prefer the user's configured home
-                    // location instead of showing a misleading city.
+                    // Do not trust extremely inaccurate desktop/IP locations.
                     if (
                         !Number.isFinite(accuracy) ||
                         accuracy > 10000
                     ) {
                         console.warn(
-                            'Low-accuracy location. Using the default city.'
+                            'Low-accuracy location; using default city.'
                         );
-                        getWeatherByName(DEFAULT_CITY);
+
+                        if (!useLastKnownLocation()) {
+                            getWeatherByName(DEFAULT_CITY);
+                        }
                         return;
                     }
+
+                    let locationName = DEFAULT_CITY;
 
                     try {
                         const geoRes = await fetch(
@@ -2866,69 +2787,61 @@
                             }
                         );
 
-                        if (!geoRes.ok) {
-                            throw new Error(
-                                `Reverse geocoding failed: HTTP ${geoRes.status}`
-                            );
+                        if (geoRes.ok) {
+                            const geoData = await geoRes.json();
+                            const address = geoData.address || {};
+
+                            const neighborhood =
+                                address.suburb ||
+                                address.neighbourhood ||
+                                address.residential ||
+                                address.village;
+
+                            const city =
+                                address.city ||
+                                address.town ||
+                                address.municipality ||
+                                address.county;
+
+                            locationName = city || DEFAULT_CITY;
+
+                            if (neighborhood && city) {
+                                locationName =
+                                    `${neighborhood}, ${city}`;
+                            }
                         }
-
-                        const geoData = await geoRes.json();
-                        const address = geoData.address || {};
-
-                        const neighborhood =
-                            address.suburb ||
-                            address.neighbourhood ||
-                            address.residential ||
-                            address.village;
-
-                        const city =
-                            address.city ||
-                            address.town ||
-                            address.municipality ||
-                            address.county;
-
-                        const state =
-                            address.state || '';
-
-                        let locationName = city || DEFAULT_CITY;
-
-                        if (neighborhood && city) {
-                            locationName = `${neighborhood}, ${city}`;
-                        }
-
-                        try {
-                                localStorage.setItem(
-                                    'skysense_last_location',
-                                    JSON.stringify({
-                                        lat,
-                                        lon,
-                                        name: locationName,
-                                        savedAt: Date.now()
-                                    })
-                                );
-                            } catch (_) {}
-
-                            getWeatherByCoords(
-                                lat,
-                                lon,
-                                locationName
-                            );
-                        }
-
                     } catch (err) {
                         console.warn(
                             'Reverse geocoding failed:',
                             err
                         );
+                    }
 
-                        // GPS coordinates remain usable even if Nominatim
-                        // is temporarily unavailable.
-                        getWeatherByCoords(
-                            lat,
-                            lon,
-                            DEFAULT_CITY
+                    // Save the exact GPS coordinates regardless of whether
+                    // reverse geocoding succeeded.
+                    try {
+                        localStorage.setItem(
+                            'skysense_last_location',
+                            JSON.stringify({
+                                lat: lat,
+                                lon: lon,
+                                name: locationName,
+                                savedAt: Date.now()
+                            })
+                        );
+                    } catch (err) {
+                        console.warn(
+                            'Could not save location:',
+                            err
                         );
                     }
+
+                    // Weather is requested using exact coordinates.
+                    getWeatherByCoords(
+                        lat,
+                        lon,
+                        locationName
+                    );
                 },
 
                 function(error) {
@@ -2938,13 +2851,14 @@
                         error.message
                     );
 
+                    // Never silently use Pune or another unrelated city.
                     if (!useLastKnownLocation()) {
                         getWeatherByName(DEFAULT_CITY);
                     }
                 },
 
                 options
-            )
+            );
         }
 
         function switchTab(tabName) {
