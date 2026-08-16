@@ -2436,7 +2436,7 @@
 
     <script>
         let trendChartInstance = null;
-        let globalChatContext = ""; 
+        let globalChatContext = {}; 
 
         window.onload = function() { detectUserLocation(); };
 
@@ -2598,7 +2598,7 @@
 
             addChatMessage(message, 'user');
             inputField.value = '';
-            const typingId = addChatMessage("Analyzing meteorological data...", 'ai');
+            const typingId = addChatMessage("Analyzing weather, forecast models, and conditions...", 'ai');
 
             try {
                 const response = await fetch('/api/chat', {
@@ -2876,6 +2876,13 @@
 
                 const intel = await response.json();
 
+                // Give the chatbot the same model-consensus intelligence
+                // that is displayed in the Forecast Intelligence card.
+                if (window.currentWeatherData) {
+                    window.currentWeatherData.forecast_intelligence = intel;
+                    globalChatContext = { ...window.currentWeatherData };
+                }
+
                 badge.textContent = `Multi-model • ${intel.model_count || 0} models`;
 
                 if (!response.ok || intel.error) {
@@ -2977,6 +2984,7 @@
         }
 
         function updateDashboard(data) {
+            window.currentWeatherData = { ...data };
             document.getElementById('locationDisplay').innerText = `📍 ${data.city}`;
             const updateTime = document.getElementById('updateTime');
             if (updateTime) updateTime.innerText = `Updated ${new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}`;
@@ -2993,7 +3001,7 @@
             document.getElementById('aqiDisplay').innerText = data.aqi;
             document.getElementById('rainDisplay').innerText = data.chance_of_rain;
 
-            globalChatContext = data.chatbot_context;
+            globalChatContext = { ...data };
 
             let cleanInsight = data.ai_summary.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
             document.getElementById('aiDisplay').innerHTML = cleanInsight;
