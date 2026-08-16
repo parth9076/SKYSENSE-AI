@@ -2588,7 +2588,6 @@
 
         // ============================================================
         // LOCATION AUTOCOMPLETE
-        // Uses a fixed-position portal so dashboard CSS cannot interfere.
         // ============================================================
         let debounceTimer;
 
@@ -2607,16 +2606,26 @@
             suggestionsBox.style.zIndex = '2147483647';
         }
 
-        function styleLocationDropdown() {
+        function hideLocationDropdown() {
+            if (!suggestionsBox) return;
+            suggestionsBox.style.display = 'none';
+            suggestionsBox.innerHTML = '';
+        }
+
+        function showLocationDropdown() {
+            const rect = cityInput.getBoundingClientRect();
+
             suggestionsBox.style.cssText = `
                 position: fixed;
                 display: block;
                 box-sizing: border-box;
+                left: ${rect.left}px;
+                top: ${rect.bottom + 6}px;
+                width: ${rect.width}px;
+                max-width: ${rect.width}px;
+                max-height: 300px;
                 overflow-x: hidden;
                 overflow-y: auto;
-                width: ${cityInput.getBoundingClientRect().width}px;
-                max-width: ${cityInput.getBoundingClientRect().width}px;
-                max-height: 300px;
                 padding: 6px;
                 margin: 0;
                 background: #0d1b2e;
@@ -2627,13 +2636,6 @@
                 opacity: 1;
                 visibility: visible;
             `;
-
-            positionLocationDropdown();
-        }
-
-        function hideLocationDropdown() {
-            suggestionsBox.style.display = 'none';
-            suggestionsBox.innerHTML = '';
         }
 
         cityInput.addEventListener('input', function() {
@@ -2649,7 +2651,12 @@
             debounceTimer = setTimeout(async () => {
                 try {
                     const res = await fetch(
-                        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5&addressdetails=1`
+                        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5&addressdetails=1`,
+                        {
+                            headers: {
+                                'Accept': 'application/json'
+                            }
+                        }
                     );
 
                     if (!res.ok) {
@@ -2661,41 +2668,30 @@
 
                     suggestionsBox.innerHTML = '';
 
-                    if (!data.length) {
+                    if (!Array.isArray(data) || data.length === 0) {
                         hideLocationDropdown();
                         return;
                     }
 
-                    // Open the dropdown before adding results.
-                    styleLocationDropdown();
+                    showLocationDropdown();
 
                     data.forEach(place => {
                         const item = document.createElement('div');
 
-                        // Inline styles intentionally used here so no
-                        // external/fallback CSS can create a horizontal row.
                         item.style.cssText = `
                             display: block;
-                            position: static;
                             width: 100%;
                             min-width: 0;
-                            max-width: 100%;
-                            height: auto;
-                            min-height: 42px;
                             box-sizing: border-box;
+                            min-height: 42px;
                             margin: 0;
                             padding: 10px 12px;
-                            clear: both;
-                            float: none;
-                            flex: none;
-                            flex-grow: 0;
-                            flex-shrink: 0;
                             text-align: left;
                             white-space: nowrap;
                             overflow: hidden;
                             text-overflow: ellipsis;
                             color: #f8fafc;
-                            background: transparent;
+                            background: #0d1b2e;
                             border: 0;
                             border-bottom: 1px solid rgba(148,163,184,.12);
                             border-radius: 7px;
@@ -2711,12 +2707,12 @@
                         });
 
                         item.addEventListener('mouseleave', () => {
-                            item.style.background = 'transparent';
+                            item.style.background = '#0d1b2e';
                         });
 
                         item.addEventListener('click', () => {
                             cityInput.value =
-                                place.display_name.split(',')[0].trim();
+                                (place.display_name || '').split(',')[0].trim();
 
                             hideLocationDropdown();
 
@@ -2745,7 +2741,12 @@
         cityInput.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 hideLocationDropdown();
-                getWeatherByName(cityInput.value);
+
+                const value = cityInput.value.trim();
+
+                if (value) {
+                    getWeatherByName(value);
+                }
             }
         });
 
