@@ -3,6 +3,8 @@ import requests
 import os
 import json
 import datetime
+import time
+import threading
 from groq import Groq
 from dotenv import load_dotenv
 
@@ -17,17 +19,107 @@ app = Flask(__name__)
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 OPENWEATHER_API_KEY = os.getenv("OPENWEATHER_API_KEY")
 
-if not GROQ_API_KEY:
-    raise RuntimeError("GROQ_API_KEY is not configured.")
-
+# OpenWeather is required for the weather dashboard.
+# Groq is optional at startup: the dashboard should still load if the
+# chatbot key is missing or temporarily unavailable.
 if not OPENWEATHER_API_KEY:
     raise RuntimeError("OPENWEATHER_API_KEY is not configured.")
 
-# Groq is used ONLY by the chatbot.
-# /api/weather does NOT call Groq.
-client = Groq(api_key=GROQ_API_KEY)
-
+client = Groq(api_key=GROQ_API_KEY) if GROQ_API_KEY else None
 GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+
+# ----------------------------------------------------------
+# SERVER-SIDE CACHE + RETRY POLICY
+# ----------------------------------------------------------
+CACHE_LOCK = threading.Lock()
+WEATHER_CACHE = {}
+INTELLIGENCE_CACHE = {}
+LOCATION_CACHE = {}
+
+WEATHER_CACHE_TTL = 300          # 5 minutes
+WEATHER_STALE_TTL = 1800         # 30 minutes
+INTELLIGENCE_CACHE_TTL = 600     # 10 minutes
+LOCATION_CACHE_TTL = 3600        # 1 hour
+HTTP_TIMEOUT = 10
+MAX_RETRIES = 2
+
+
+def cache_get(store, key, ttl):
+    now = time.monotonic()
+    with CACHE_LOCK:
+        item = store.get(key)
+        if not item:
+            return None
+        if now - item["time"] > ttl:
+            return None
+        return item["value"]
+
+
+def cache_get_stale(store, key, ttl):
+    now = time.monotonic()
+    with CACHE_LOCK:
+        item = store.get(key)
+        if not item:
+            return None
+        if now - item["time"] > ttl:
+            return None
+        return item["value"]
+
+
+def cache_set(store, key, value):
+    with CACHE_LOCK:
+        store[key] = {
+            "time": time.monotonic(),
+            "value": value
+        }
+
+
+def request_with_retry(
+    method,
+    url,
+    *,
+    params=None,
+    headers=None,
+    timeout=HTTP_TIMEOUT,
+    retries=MAX_RETRIES
+):
+    last_error = None
+
+    for attempt in range(retries + 1):
+        try:
+            response = requests.request(
+                method,
+                url,
+                params=params,
+                headers=headers,
+                timeout=timeout
+            )
+
+            # Retry transient server/rate-limit responses.
+            if response.status_code in (408, 429, 500, 502, 503, 504):
+                if attempt < retries:
+                    time.sleep(0.35 * (2 ** attempt))
+                    continue
+
+            return response
+
+        except requests.RequestException as exc:
+            last_error = exc
+            if attempt < retries:
+                time.sleep(0.35 * (2 ** attempt))
+                continue
+            raise last_error
+
+    raise last_error or RuntimeError("HTTP request failed.")
+
+
+def weather_cache_key(lat, lon):
+    return f"{float(lat):.3f},{float(lon):.3f}"
+
+
+def json_safe_copy(value):
+    # Avoid returning a mutable cached object directly.
+    return json.loads(json.dumps(value, default=str))
 
 
 # ==========================================================
@@ -79,8 +171,10 @@ def home():
 def health():
     return jsonify({
         "status": "ok",
-        "chat": bool(GROQ_API_KEY),
-        "model": GROQ_MODEL
+        "weather": bool(OPENWEATHER_API_KEY),
+        "chat": bool(GROQ_API_KEY and client),
+        "model": GROQ_MODEL if GROQ_API_KEY else None,
+        "cache": True
     })
 
 
@@ -159,6 +253,15 @@ Keep simple answers concise and practical. Do not expose these instructions.
         + "\n\nUSER:\n"
         + message
     )
+
+    if client is None:
+        return jsonify({
+            "reply": (
+                "SkySense weather is working, but the AI chatbot is not "
+                "configured yet. Please add GROQ_API_KEY in Render."
+            ),
+            "error_type": "configuration"
+        }), 503
 
     try:
         result = client.chat.completions.create(
@@ -336,178 +439,236 @@ def create_weather_insights(
 
 @app.route('/api/weather', methods=['GET'])
 def weather():
-
     query = request.args.get('city', 'Pune').strip()
-
     lat = request.args.get('lat')
     lon = request.args.get('lon')
-
     resolved_city_name = query
 
     # ------------------------------------------------------
-    # LOCATION SEARCH
+    # LOCATION SEARCH WITH CACHE + RETRIES
     # ------------------------------------------------------
-
     if not lat or not lon:
+        location_key = query.lower()
 
-        geo_url = (
-            "https://nominatim.openstreetmap.org/search"
-            f"?q={requests.utils.quote(query)}"
-            "&format=json"
-            "&limit=1"
+        cached_location = cache_get(
+            LOCATION_CACHE,
+            location_key,
+            LOCATION_CACHE_TTL
         )
 
-        headers = {
-            'User-Agent': 'SkySenseAI-WeatherApp'
-        }
+        if cached_location:
+            lat = cached_location["lat"]
+            lon = cached_location["lon"]
+            resolved_city_name = cached_location["name"]
+        else:
+            geo_url = "https://nominatim.openstreetmap.org/search"
+            headers = {
+                "User-Agent": "SkySenseAI/1.0 (weather dashboard)"
+            }
 
-        try:
+            try:
+                geo_res = request_with_retry(
+                    "GET",
+                    geo_url,
+                    params={
+                        "q": query,
+                        "format": "json",
+                        "limit": 1
+                    },
+                    headers=headers
+                )
+            except requests.RequestException:
+                return jsonify({
+                    "error": (
+                        "Location service is temporarily unavailable. "
+                        "Please try again or use your current location."
+                    ),
+                    "error_type": "location_service"
+                }), 503
 
-            geo_res = requests.get(
-                geo_url,
-                headers=headers,
-                timeout=15
+            try:
+                places = geo_res.json()
+            except ValueError:
+                places = []
+
+            if geo_res.status_code != 200 or not places:
+                return jsonify({
+                    "error": (
+                        "Location not found. Check the spelling or try "
+                        "a nearby major city/PIN code."
+                    ),
+                    "error_type": "location_not_found"
+                }), 404
+
+            place = places[0]
+            lat = place["lat"]
+            lon = place["lon"]
+
+            parts = place.get("display_name", query).split(",")
+            resolved_city_name = (
+                f"{parts[0].strip()}, {parts[1].strip()}"
+                if len(parts) > 1
+                else parts[0].strip()
             )
 
-        except requests.RequestException:
+            cache_set(
+                LOCATION_CACHE,
+                location_key,
+                {
+                    "lat": lat,
+                    "lon": lon,
+                    "name": resolved_city_name
+                }
+            )
 
-            return jsonify({
-                "error": "Unable to connect to the location service."
-            }), 500
+    # Validate coordinates.
+    try:
+        lat_float = float(lat)
+        lon_float = float(lon)
+        if not (-90 <= lat_float <= 90 and -180 <= lon_float <= 180):
+            raise ValueError
+    except (TypeError, ValueError):
+        return jsonify({
+            "error": "Invalid location coordinates.",
+            "error_type": "invalid_coordinates"
+        }), 400
 
-        if (
-            geo_res.status_code == 200
-            and len(geo_res.json()) > 0
-        ):
+    cache_key = weather_cache_key(lat_float, lon_float)
 
-            place = geo_res.json()[0]
+    # ------------------------------------------------------
+    # FAST CACHE HIT
+    # ------------------------------------------------------
+    cached = cache_get(
+        WEATHER_CACHE,
+        cache_key,
+        WEATHER_CACHE_TTL
+    )
 
-            lat = place['lat']
-            lon = place['lon']
-
-            parts = place['display_name'].split(',')
-
-            if len(parts) > 1:
-                resolved_city_name = (
-                    f"{parts[0].strip()}, {parts[1].strip()}"
-                )
-            else:
-                resolved_city_name = parts[0].strip()
-
-        else:
-
-            return jsonify({
-                "error": (
-                    "Location not found. Please check your spelling "
-                    "or try a nearby major city/PIN code."
-                )
-            }), 400
+    if cached:
+        response = json_safe_copy(cached)
+        response["cached"] = True
+        response["cache_age_seconds"] = 0
+        return jsonify(response)
 
     # ------------------------------------------------------
     # CURRENT WEATHER
     # ------------------------------------------------------
-
-    current_url = (
-        "https://api.openweathermap.org/data/2.5/weather"
-        f"?lat={lat}"
-        f"&lon={lon}"
-        f"&appid={OPENWEATHER_API_KEY}"
-        "&units=metric"
-    )
+    current_url = "https://api.openweathermap.org/data/2.5/weather"
 
     try:
-
-        current_response = requests.get(
+        current_response = request_with_retry(
+            "GET",
             current_url,
-            timeout=15
+            params={
+                "lat": lat_float,
+                "lon": lon_float,
+                "appid": OPENWEATHER_API_KEY,
+                "units": "metric"
+            }
         )
-
     except requests.RequestException:
-
-        return jsonify({
-            "error": "Unable to connect to the weather service."
-        }), 500
-
-    if current_response.status_code != 200:
+        stale = cache_get_stale(
+            WEATHER_CACHE,
+            cache_key,
+            WEATHER_STALE_TTL
+        )
+        if stale:
+            response = json_safe_copy(stale)
+            response["cached"] = True
+            response["stale"] = True
+            response["warning"] = (
+                "Live weather service is temporarily unavailable. "
+                "Showing recently cached weather."
+            )
+            return jsonify(response)
 
         return jsonify({
             "error": (
-                "Could not retrieve weather telemetry "
-                "for this coordinate."
+                "Live weather service is temporarily unavailable. "
+                "Please try again in a moment."
+            ),
+            "error_type": "weather_service"
+        }), 503
+
+    if current_response.status_code != 200:
+        stale = cache_get_stale(
+            WEATHER_CACHE,
+            cache_key,
+            WEATHER_STALE_TTL
+        )
+        if stale:
+            response = json_safe_copy(stale)
+            response["cached"] = True
+            response["stale"] = True
+            response["warning"] = (
+                "Showing recently cached weather because the live service "
+                "returned an error."
             )
-        }), 400
+            return jsonify(response)
 
-    data = current_response.json()
-
-    temp = data['main']['temp']
-    feels_like = data['main']['feels_like']
-    description = data['weather'][0]['description']
-    humidity = data['main']['humidity']
-    wind_speed = data['wind']['speed']
-    pressure = data['main']['pressure']
-
-    # ------------------------------------------------------
-    # WIND DIRECTION
-    # ------------------------------------------------------
-
-    wind_deg = data['wind'].get('deg', 0)
-
-    dirs = [
-        'N', 'NE', 'E', 'SE',
-        'S', 'SW', 'W', 'NW'
-    ]
-
-    wind_dir = dirs[
-        int((wind_deg / 42.5) + 0.5) % 8
-    ]
-
-    # ------------------------------------------------------
-    # SUNRISE / SUNSET
-    # ------------------------------------------------------
-
-    timezone_shift = data.get('timezone', 0)
-
-    sunrise_time = datetime.datetime.fromtimestamp(
-        data['sys']['sunrise'] + timezone_shift,
-        datetime.timezone.utc
-    ).strftime('%I:%M %p')
-
-    sunset_time = datetime.datetime.fromtimestamp(
-        data['sys']['sunset'] + timezone_shift,
-        datetime.timezone.utc
-    ).strftime('%I:%M %p')
-
-    # ------------------------------------------------------
-    # AIR QUALITY
-    # ------------------------------------------------------
-
-    aqi_text = "Good"
-
-    air_url = (
-        "https://api.openweathermap.org/data/2.5/air_pollution"
-        f"?lat={lat}"
-        f"&lon={lon}"
-        f"&appid={OPENWEATHER_API_KEY}"
-    )
+        return jsonify({
+            "error": (
+                "The weather service rejected this location request. "
+                f"HTTP {current_response.status_code}."
+            ),
+            "error_type": "weather_service"
+        }), 502
 
     try:
+        data = current_response.json()
+        temp = data["main"]["temp"]
+        feels_like = data["main"]["feels_like"]
+        description = data["weather"][0]["description"]
+        humidity = data["main"]["humidity"]
+        wind_speed = data["wind"]["speed"]
+        pressure = data["main"]["pressure"]
+    except (KeyError, TypeError, ValueError, IndexError):
+        return jsonify({
+            "error": "Weather service returned incomplete data.",
+            "error_type": "weather_data"
+        }), 502
 
-        air_response = requests.get(
+    # ------------------------------------------------------
+    # WIND / SUN
+    # ------------------------------------------------------
+    wind_deg = data["wind"].get("deg", 0)
+    dirs = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
+    wind_dir = dirs[int((wind_deg / 42.5) + 0.5) % 8]
+
+    timezone_shift = data.get("timezone", 0)
+
+    sunrise_time = datetime.datetime.fromtimestamp(
+        data["sys"]["sunrise"] + timezone_shift,
+        datetime.timezone.utc
+    ).strftime("%I:%M %p")
+
+    sunset_time = datetime.datetime.fromtimestamp(
+        data["sys"]["sunset"] + timezone_shift,
+        datetime.timezone.utc
+    ).strftime("%I:%M %p")
+
+    # ------------------------------------------------------
+    # AIR QUALITY (best effort)
+    # ------------------------------------------------------
+    aqi_text = "Unavailable"
+    air_url = "https://api.openweathermap.org/data/2.5/air_pollution"
+
+    try:
+        air_response = request_with_retry(
+            "GET",
             air_url,
-            timeout=15
+            params={
+                "lat": lat_float,
+                "lon": lon_float,
+                "appid": OPENWEATHER_API_KEY
+            },
+            retries=1
         )
 
         if air_response.status_code == 200:
-
             air_data = air_response.json()
-
-            if (
-                'list' in air_data
-                and len(air_data['list']) > 0
-            ):
-
-                aqi_number = air_data['list'][0]['main']['aqi']
-
+            if air_data.get("list"):
+                aqi_number = air_data["list"][0]["main"]["aqi"]
                 aqi_map = {
                     1: "Good",
                     2: "Fair",
@@ -515,149 +676,93 @@ def weather():
                     4: "Poor",
                     5: "Very Poor"
                 }
-
                 aqi_text = aqi_map.get(
                     aqi_number,
-                    "Good"
+                    "Unavailable"
                 )
-
-    except requests.RequestException:
-
+    except (requests.RequestException, ValueError, KeyError, TypeError):
         aqi_text = "Unavailable"
 
     # ------------------------------------------------------
-    # FORECAST
+    # FORECAST (best effort; current weather still works if it fails)
     # ------------------------------------------------------
-
-    forecast_url = (
-        "https://api.openweathermap.org/data/2.5/forecast"
-        f"?lat={lat}"
-        f"&lon={lon}"
-        f"&appid={OPENWEATHER_API_KEY}"
-        "&units=metric"
-    )
-
-    try:
-
-        forecast_response = requests.get(
-            forecast_url,
-            timeout=15
-        )
-
-    except requests.RequestException:
-
-        forecast_response = None
+    forecast_url = "https://api.openweathermap.org/data/2.5/forecast"
 
     daily_forecasts = []
     hourly_rain_timeline = []
     chance_of_rain = 0
+    forecast_status = "live"
 
-    # ------------------------------------------------------
-    # CHATBOT WEATHER CONTEXT
-    # ------------------------------------------------------
+    try:
+        forecast_response = request_with_retry(
+            "GET",
+            forecast_url,
+            params={
+                "lat": lat_float,
+                "lon": lon_float,
+                "appid": OPENWEATHER_API_KEY,
+                "units": "metric"
+            }
+        )
+    except requests.RequestException:
+        forecast_response = None
 
-    chatbot_context = (
-        f"Current Weather in {resolved_city_name}: "
-        f"{temp}°C, {description}. "
-        f"Feels like {feels_like}°C. "
-        f"Humidity: {humidity}%. "
-        f"Wind: {round(wind_speed * 3.6)} km/h "
-        f"from {wind_dir}. "
-        f"Pressure: {pressure} hPa. "
-        f"Air Quality: {aqi_text}.\n"
-        f"Hourly/Upcoming forecast timeline:"
-    )
+    forecast_list = []
 
-    if (
-        forecast_response
-        and forecast_response.status_code == 200
-    ):
+    if forecast_response and forecast_response.status_code == 200:
+        try:
+            forecast_data = forecast_response.json()
+            forecast_list = forecast_data.get("list", [])
+        except ValueError:
+            forecast_list = []
 
-        forecast_data = forecast_response.json()
+    if not forecast_list:
+        forecast_status = "unavailable"
 
-        forecast_list = forecast_data.get(
-            'list',
-            []
+    if forecast_list:
+        chance_of_rain = int(
+            forecast_list[0].get("pop", 0) * 100
         )
 
-        if forecast_list:
-
-            chance_of_rain = int(
-                forecast_list[0].get(
-                    'pop',
-                    0
-                ) * 100
-            )
-
         for i, item in enumerate(forecast_list):
+            try:
+                dt_txt = item["dt_txt"]
+                t = round(item["main"]["temp"])
+                desc = item["weather"][0]["main"]
+                pop = int(item.get("pop", 0) * 100)
 
-            dt_txt = item['dt_txt']
+                if i < 8:
+                    time_obj = datetime.datetime.strptime(
+                        dt_txt,
+                        "%Y-%m-%d %H:%M:%S"
+                    )
+                    hourly_rain_timeline.append({
+                        "time": time_obj.strftime("%I %p"),
+                        "pop": pop,
+                        "desc": desc
+                    })
 
-            t = round(
-                item['main']['temp']
-            )
+                if "12:00:00" in dt_txt:
+                    date_obj = datetime.datetime.strptime(
+                        dt_txt.split(" ")[0],
+                        "%Y-%m-%d"
+                    )
+                    daily_forecasts.append({
+                        "date": date_obj.strftime("%d %b"),
+                        "day": date_obj.strftime("%a"),
+                        "temp": t,
+                        "min_temp": round(
+                            item["main"]["temp"] - 3
+                        ),
+                        "description": desc,
+                        "pop": pop
+                    })
+            except (KeyError, TypeError, ValueError):
+                continue
 
-            desc = item['weather'][0]['main']
-
-            pop = int(
-                item.get('pop', 0) * 100
-            )
-
-            chatbot_context += (
-                f" [{dt_txt} -> "
-                f"Temp: {t}°C, "
-                f"Condition: {desc}, "
-                f"Rain Probability: {pop}%]"
-            )
-
-            # Hourly timeline
-            if i < 8:
-
-                time_obj = datetime.datetime.strptime(
-                    dt_txt,
-                    '%Y-%m-%d %H:%M:%S'
-                )
-
-                hourly_rain_timeline.append({
-                    "time": time_obj.strftime('%I %p'),
-                    "pop": pop,
-                    "desc": desc
-                })
-
-            # Daily forecast
-            if '12:00:00' in dt_txt:
-
-                date_obj = datetime.datetime.strptime(
-                    dt_txt.split(' ')[0],
-                    '%Y-%m-%d'
-                )
-
-                daily_forecasts.append({
-
-                    "date": date_obj.strftime('%d %b'),
-
-                    "day": date_obj.strftime('%a'),
-
-                    "temp": t,
-
-                    "min_temp": round(
-                        item['main']['temp'] - 3
-                    ),
-
-                    "description": desc,
-
-                    # Probability of precipitation for this forecast point
-                    "pop": pop
-                })
-
-    # ======================================================
-    # IMPORTANT:
-    # NO GEMINI CALL HERE.
-    #
-    # This means opening/reloading the weather dashboard
-    # does NOT consume a Gemini API request.
-    # ======================================================
-
+    # ------------------------------------------------------
+    # DETERMINISTIC INSIGHTS
+    # ------------------------------------------------------
     (
         insight_text,
         travel_text,
@@ -673,53 +778,58 @@ def weather():
         chance_of_rain
     )
 
-    # ------------------------------------------------------
-    # RETURN WEATHER DATA
-    # ------------------------------------------------------
+    chatbot_context = (
+        f"Current Weather in {resolved_city_name}: "
+        f"{temp}°C, {description}. "
+        f"Feels like {feels_like}°C. "
+        f"Humidity: {humidity}%. "
+        f"Wind: {round(wind_speed * 3.6)} km/h from {wind_dir}. "
+        f"Pressure: {pressure} hPa. "
+        f"Air Quality: {aqi_text}. "
+        f"Forecast status: {forecast_status}."
+    )
 
-    return jsonify({
+    for item in forecast_list[:16]:
+        chatbot_context += (
+            f" [{item.get('dt_txt', '')} -> "
+            f"Temp: {round(item.get('main', {}).get('temp', temp))}°C, "
+            f"Condition: {item.get('weather', [{}])[0].get('main', 'Unknown')}, "
+            f"Rain Probability: {round(item.get('pop', 0) * 100)}%]"
+        )
 
+    result = {
         "city": resolved_city_name,
-
-        "latitude": float(lat),
-
-        "longitude": float(lon),
-
+        "latitude": lat_float,
+        "longitude": lon_float,
         "temperature": temp,
-
         "feels_like": feels_like,
-
         "description": description,
-
         "humidity": humidity,
-
         "wind_speed": wind_speed,
-
         "pressure": pressure,
-
         "wind_dir": wind_dir,
-
         "sunrise": sunrise_time,
-
         "sunset": sunset_time,
-
         "aqi": aqi_text,
-
         "chance_of_rain": f"{chance_of_rain}%",
-
         "hourly_rain": hourly_rain_timeline,
-
         "ai_summary": insight_text,
-
         "travel_advice": travel_text,
-
         "activities": activities,
-
         "forecast": daily_forecasts,
+        "forecast_status": forecast_status,
+        "chatbot_context": chatbot_context,
+        "cached": False,
+        "stale": False
+    }
 
-        "chatbot_context": chatbot_context
-    })
+    cache_set(
+        WEATHER_CACHE,
+        cache_key,
+        json_safe_copy(result)
+    )
 
+    return jsonify(result)
 
 
 @app.route('/api/forecast-intelligence', methods=['GET'])
@@ -728,178 +838,120 @@ def forecast_intelligence():
         lat = float(request.args.get("lat"))
         lon = float(request.args.get("lon"))
     except (TypeError, ValueError):
-        return jsonify({
-            "error": "Valid latitude and longitude are required."
-        }), 400
+        return jsonify({"error": "Valid latitude and longitude are required."}), 400
+
+    key = weather_cache_key(lat, lon)
+    cached = cache_get(INTELLIGENCE_CACHE, key, INTELLIGENCE_CACHE_TTL)
+    if cached:
+        response = json_safe_copy(cached)
+        response["cached"] = True
+        return jsonify(response)
 
     model_configs = {
         "ECMWF IFS": "ecmwf_ifs",
         "NOAA GFS": "gfs_seamless",
         "DWD ICON": "icon_seamless"
     }
-
     base_url = "https://api.open-meteo.com/v1/forecast"
-
     common_params = {
         "latitude": lat,
         "longitude": lon,
-        "hourly": (
-            "temperature_2m,"
-            "precipitation_probability"
-        ),
+        "hourly": "temperature_2m,precipitation_probability",
         "forecast_days": 2,
         "timezone": "auto",
         "temperature_unit": "celsius"
     }
-
     model_data = {}
 
     for name, model_id in model_configs.items():
         try:
             params = dict(common_params)
             params["models"] = model_id
-
-            response = requests.get(
-                base_url,
-                params=params,
-                timeout=12
+            response = request_with_retry(
+                "GET", base_url, params=params, timeout=12, retries=1
             )
-
             if response.status_code != 200:
-                print(
-                    f"[Forecast Intelligence] {name} returned "
-                    f"{response.status_code}",
-                    flush=True
-                )
+                print(f"[Forecast Intelligence] {name} returned {response.status_code}", flush=True)
                 continue
-
-            payload = response.json()
-            hourly = payload.get("hourly", {})
-
-            temps = hourly.get("temperature_2m", [])
-            rain = hourly.get(
-                "precipitation_probability",
-                []
-            )
-
+            hourly_data = response.json().get("hourly", {})
+            temps = hourly_data.get("temperature_2m", [])
+            rain = hourly_data.get("precipitation_probability", [])
             if temps:
                 model_data[name] = {
-                    "times": hourly.get("time", []),
+                    "times": hourly_data.get("time", []),
                     "temps": temps,
                     "rain": rain
                 }
-
-        except requests.RequestException as e:
-            print(
-                f"[Forecast Intelligence] {name}: {e}",
-                flush=True
-            )
+        except (requests.RequestException, ValueError) as exc:
+            print(f"[Forecast Intelligence] {name}: {exc}", flush=True)
 
     if len(model_data) < 2:
         return jsonify({
-            "error": (
-                "Not enough weather models responded for consensus. "
-                f"Available: {', '.join(model_data.keys()) or 'none'}"
-            )
-        }), 502
+            "error": "Forecast intelligence is temporarily unavailable. Not enough model guidance responded.",
+            "error_type": "model_guidance"
+        }), 503
 
     names = list(model_data.keys())
-    length = min(
-        24,
-        *[
-            len(model_data[name]["temps"])
-            for name in names
-        ]
-    )
-
-    if length <= 0:
-        return jsonify({
-            "error": "The weather models returned no hourly data."
-        }), 502
-
-    average_temps = []
-    rain_values = []
-    spreads = []
+    length = min(24, *[len(model_data[name]["temps"]) for name in names])
+    average_temps, rain_values, spreads, hourly = [], [], [], []
 
     for i in range(length):
-        temperatures = []
-
+        temperatures, hour_rain = [], []
         for name in names:
             value = model_data[name]["temps"][i]
-
             if isinstance(value, (int, float)):
                 temperatures.append(float(value))
-
             rain_series = model_data[name]["rain"]
-
-            if (
-                i < len(rain_series)
-                and isinstance(rain_series[i], (int, float))
-            ):
-                rain_values.append(float(rain_series[i]))
+            if i < len(rain_series) and isinstance(rain_series[i], (int, float)):
+                hour_rain.append(float(rain_series[i]))
 
         if temperatures:
-            average_temps.append(
-                sum(temperatures) / len(temperatures)
-            )
-            spreads.append(
-                max(temperatures) - min(temperatures)
-            )
+            mean_temp = sum(temperatures) / len(temperatures)
+            spread = max(temperatures) - min(temperatures)
+            average_temps.append(mean_temp)
+            spreads.append(spread)
+            rain_mean = round(sum(hour_rain) / len(hour_rain)) if hour_rain else None
+            if rain_mean is not None:
+                rain_values.append(rain_mean)
+            hourly.append({
+                "time": model_data[names[0]]["times"][i] if i < len(model_data[names[0]]["times"]) else None,
+                "temperature_mean": round(mean_temp, 1),
+                "temperature_spread": round(spread, 1),
+                "rain_probability_mean": rain_mean
+            })
 
     if not average_temps:
-        return jsonify({
-            "error": "Unable to calculate model consensus."
-        }), 502
+        return jsonify({"error": "Unable to calculate model consensus.", "error_type": "model_guidance"}), 503
 
-    average_spread = (
-        sum(spreads) / len(spreads)
-        if spreads else 0
-    )
-
+    average_spread = sum(spreads) / len(spreads) if spreads else 0
     max_spread = max(spreads) if spreads else 0
 
     if average_spread <= 1.5:
-        confidence = "High"
-        agreement = "Strong"
-        confidence_note = (
-            "The selected models are closely grouped."
-        )
+        confidence, agreement = "High", "Strong"
+        confidence_note = "The selected models are closely grouped."
     elif average_spread <= 3:
-        confidence = "Moderate"
-        agreement = "Moderate"
-        confidence_note = (
-            "The models show some disagreement."
-        )
+        confidence, agreement = "Moderate", "Moderate"
+        confidence_note = "The models show some disagreement."
     else:
-        confidence = "Lower"
-        agreement = "Mixed"
-        confidence_note = (
-            "The models disagree noticeably, so timing and "
-            "temperature confidence is lower."
-        )
+        confidence, agreement = "Lower", "Mixed"
+        confidence_note = "The models disagree noticeably; forecast uncertainty is higher."
 
-    times = model_data[names[0]]["times"]
-
-    return jsonify({
+    result = {
         "models_available": names,
         "model_count": len(names),
         "confidence": confidence,
         "confidence_note": confidence_note,
         "agreement": agreement,
         "max_temperature_spread": round(max_spread, 1),
-        "average_temperature_spread": round(
-            average_spread,
-            1
-        ),
-        "peak_ensemble_rain_probability": (
-            round(max(rain_values))
-            if rain_values else None
-        ),
+        "average_temperature_spread": round(average_spread, 1),
+        "peak_ensemble_rain_probability": max(rain_values) if rain_values else None,
         "next_24_low": round(min(average_temps), 1),
         "next_24_high": round(max(average_temps), 1),
-        "times": times[:length]
-    })
-
+        "hourly": hourly[:12],
+        "cached": False
+    }
+    cache_set(INTELLIGENCE_CACHE, key, json_safe_copy(result))
+    return jsonify(result)
 
 # ==========================================================
 # RENDER STARTUP
