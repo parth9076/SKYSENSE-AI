@@ -2594,22 +2594,74 @@
         async function sendChatMessage() {
             const inputField = document.getElementById('chatInput');
             const message = inputField.value.trim();
-            if(!message) return;
+
+            if (!message) return;
 
             addChatMessage(message, 'user');
             inputField.value = '';
-            const typingId = addChatMessage("Analyzing weather, forecast models, and conditions...", 'ai');
+
+            const typingId = addChatMessage(
+                "Analyzing weather, forecast models, and conditions...",
+                'ai'
+            );
+
+            const controller = new AbortController();
+            const timeout = setTimeout(
+                () => controller.abort(),
+                30000
+            );
 
             try {
                 const response = await fetch('/api/chat', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: message, context: globalChatContext })
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        context: globalChatContext || {}
+                    }),
+                    signal: controller.signal
                 });
-                const data = await response.json();
-                document.getElementById(typingId).innerText = data.reply;
+
+                const raw = await response.text();
+
+                let data = {};
+                try {
+                    data = raw ? JSON.parse(raw) : {};
+                } catch (_) {
+                    data = {};
+                }
+
+                if (!response.ok) {
+                    throw new Error(
+                        data.reply ||
+                        `AI server returned HTTP ${response.status}.`
+                    );
+                }
+
+                document.getElementById(typingId).innerText =
+                    data.reply ||
+                    "I didn't receive a response. Please try again.";
+
             } catch (err) {
-                document.getElementById(typingId).innerText = "Error connecting to AI Network.";
+                console.error("SkySense chatbot error:", err);
+
+                let messageText =
+                    "Unable to connect to SkySense AI.";
+
+                if (err.name === "AbortError") {
+                    messageText =
+                        "SkySense AI is taking too long to respond. Please try again.";
+                } else if (err.message) {
+                    messageText = err.message;
+                }
+
+                document.getElementById(typingId).innerText = messageText;
+
+            } finally {
+                clearTimeout(timeout);
             }
         }
 
