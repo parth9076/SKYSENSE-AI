@@ -430,8 +430,13 @@ def forecast_intelligence():
             )
 
     if len(model_results) < 2:
+        available = ", ".join(model_results.keys()) or "none"
+
         return jsonify({
-            "error": "Not enough weather models responded for consensus."
+            "error": (
+                "Not enough weather models responded for consensus. "
+                f"Available: {available}"
+            )
         }), 502
 
     # Use the first 24 hours for the near-term consensus.
@@ -613,6 +618,16 @@ def forecast_intelligence():
         "model_count": len(model_results),
 
         "confidence": confidence,
+
+        "confidence_note": (
+            "All selected models are closely grouped."
+            if agreement == "Strong"
+            else
+            "The models show some disagreement."
+            if agreement == "Moderate"
+            else
+            "The models disagree noticeably; forecast uncertainty is higher."
+        ),
 
         "agreement": agreement,
 
