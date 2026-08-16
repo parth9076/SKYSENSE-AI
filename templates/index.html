@@ -1353,7 +1353,31 @@
             }
         }
 
-\n        /* SKY SENSE POLISH: restrained motion, depth, accessibility */\n        :root { --sky-ease: cubic-bezier(.22,1,.36,1); }\n        html { scroll-behavior: smooth; -webkit-tap-highlight-color: transparent; }\n        body { overscroll-behavior-x: none; }\n        .card,.forecast-card,.rain-slot,.glance-box,.stat-pill,.activity-item {\n            transition: transform .28s var(--sky-ease), border-color .28s ease, background .28s ease, box-shadow .28s ease;\n        }\n        .card:hover { border-color: rgba(96,165,250,.16); box-shadow: 0 14px 36px rgba(0,0,0,.14); }\n        .forecast-card:hover,.rain-slot:hover,.glance-box:hover,.stat-pill:hover { transform: translateY(-3px); border-color: rgba(96,165,250,.22); background: rgba(255,255,255,.045); }\n        .activity-item:hover { transform: translateX(3px); border-color: rgba(96,165,250,.18); }\n        :where(button,input,.nav-links div,.suggestion-chip):focus-visible { outline:2px solid #60a5fa; outline-offset:3px; }\n        #loading { position:fixed; inset:0; z-index:3000; display:none; align-items:center; justify-content:center; padding:24px; background:rgba(4,10,24,.58); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); color:#cbd5e1; font-size:.88rem; }\n        #loading::before { content:""; width:22px; height:22px; margin-right:12px; border:2px solid rgba(255,255,255,.16); border-top-color:#60a5fa; border-radius:50%; animation:skySpin .8s linear infinite; }\n        @keyframes skySpin { to { transform:rotate(360deg); } }\n        .view-section.active-view { animation:skyViewIn .38s var(--sky-ease) both; }\n        @keyframes skyViewIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }\n        .forecast-card,.rain-slot,.detailed-day-card,.activity-item { animation:skyItemIn .45s var(--sky-ease) both; }\n        @keyframes skyItemIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }\n        .update-time { display:flex; align-items:center; gap:7px; }\n        .update-time::before { content:""; width:6px; height:6px; flex:0 0 6px; border-radius:50%; background:#34d399; box-shadow:0 0 0 4px rgba(52,211,153,.08); animation:skyPulse 2.2s ease-in-out infinite; }\n        @keyframes skyPulse { 0%,100%{opacity:.55;transform:scale(.9)} 50%{opacity:1;transform:scale(1)} }\n        .chart-container canvas { display:block; max-width:100%; }\n        @media (max-width:480px) { .card:hover,.forecast-card:hover,.rain-slot:hover,.glance-box:hover,.stat-pill:hover,.activity-item:hover { transform:none; } #loading { font-size:.8rem; text-align:center; } }\n        @media (prefers-reduced-motion:reduce) { html{scroll-behavior:auto} *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important} }\n
+        /* SKY SENSE POLISH: restrained motion, depth, accessibility */
+        :root { --sky-ease: cubic-bezier(.22,1,.36,1); }
+        html { scroll-behavior: smooth; -webkit-tap-highlight-color: transparent; }
+        body { overscroll-behavior-x: none; }
+        .card,.forecast-card,.rain-slot,.glance-box,.stat-pill,.activity-item {
+            transition: transform .28s var(--sky-ease), border-color .28s ease, background .28s ease, box-shadow .28s ease;
+        }
+        .card:hover { border-color: rgba(96,165,250,.16); box-shadow: 0 14px 36px rgba(0,0,0,.14); }
+        .forecast-card:hover,.rain-slot:hover,.glance-box:hover,.stat-pill:hover { transform: translateY(-3px); border-color: rgba(96,165,250,.22); background: rgba(255,255,255,.045); }
+        .activity-item:hover { transform: translateX(3px); border-color: rgba(96,165,250,.18); }
+        :where(button,input,.nav-links div,.suggestion-chip):focus-visible { outline:2px solid #60a5fa; outline-offset:3px; }
+        #loading { position:fixed; inset:0; z-index:3000; display:none; align-items:center; justify-content:center; padding:24px; background:rgba(4,10,24,.58); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); color:#cbd5e1; font-size:.88rem; }
+        #loading::before { content:""; width:22px; height:22px; margin-right:12px; border:2px solid rgba(255,255,255,.16); border-top-color:#60a5fa; border-radius:50%; animation:skySpin .8s linear infinite; }
+        @keyframes skySpin { to { transform:rotate(360deg); } }
+        .view-section.active-view { animation:skyViewIn .38s var(--sky-ease) both; }
+        @keyframes skyViewIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+        .forecast-card,.rain-slot,.detailed-day-card,.activity-item { animation:skyItemIn .45s var(--sky-ease) both; }
+        @keyframes skyItemIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+        .update-time { display:flex; align-items:center; gap:7px; }
+        .update-time::before { content:""; width:6px; height:6px; flex:0 0 6px; border-radius:50%; background:#34d399; box-shadow:0 0 0 4px rgba(52,211,153,.08); animation:skyPulse 2.2s ease-in-out infinite; }
+        @keyframes skyPulse { 0%,100%{opacity:.55;transform:scale(.9)} 50%{opacity:1;transform:scale(1)} }
+        .chart-container canvas { display:block; max-width:100%; }
+        @media (max-width:480px) { .card:hover,.forecast-card:hover,.rain-slot:hover,.glance-box:hover,.stat-pill:hover,.activity-item:hover { transform:none; } #loading { font-size:.8rem; text-align:center; } }
+        @media (prefers-reduced-motion:reduce) { html{scroll-behavior:auto} *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important} }
+
         /* FINAL RESPONSIVE FIX */
         *,*::before,*::after{min-width:0;}
         html,body{width:100%;max-width:100%;overflow-x:hidden;}
@@ -2519,7 +2543,7 @@
                             };
                             suggestionsBox.appendChild(div);
                         });
-                        suggestionsBox.style.display = 'flex';
+                        suggestionsBox.style.display = 'block'; // FIXED HERE - Stack results vertically
                     } else {
                         suggestionsBox.style.display = 'none';
                     }
