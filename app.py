@@ -589,13 +589,14 @@ def weather():
         )
 
         if forecast_list:
-
-            chance_of_rain = int(
-                forecast_list[0].get(
-                    'pop',
-                    0
-                ) * 100
+            # Peak precipitation probability across the next 24 hours.
+            next_24h = forecast_list[:8]
+            chance_of_rain = max(
+                int(round(item.get('pop', 0) * 100))
+                for item in next_24h
             )
+
+        daily_groups = {}
 
         for i, item in enumerate(forecast_list):
 
@@ -632,31 +633,37 @@ def weather():
                     "desc": desc
                 })
 
-            # Daily forecast
-            if '12:00:00' in dt_txt:
+            # Aggregate every 3-hour point into an actual daily high/low
+            # and the peak precipitation probability for that day.
+            date_key = dt_txt.split(' ')[0]
+            group = daily_groups.setdefault(
+                date_key, {"temps": [], "pops": [], "conditions": []}
+            )
+            group["temps"].append(float(item['main']['temp']))
+            group["pops"].append(pop)
+            group["conditions"].append(desc)
 
-                date_obj = datetime.datetime.strptime(
-                    dt_txt.split(' ')[0],
-                    '%Y-%m-%d'
-                )
+        for date_key, group in list(daily_groups.items())[:5]:
 
-                daily_forecasts.append({
+            date_obj = datetime.datetime.strptime(
+                date_key,
+                '%Y-%m-%d'
+            )
 
-                    "date": date_obj.strftime('%d %b'),
+            counts = {}
+            for condition in group["conditions"]:
+                counts[condition] = counts.get(condition, 0) + 1
 
-                    "day": date_obj.strftime('%a'),
+            day_condition = max(counts, key=counts.get)
 
-                    "temp": t,
-
-                    "min_temp": round(
-                        item['main']['temp'] - 3
-                    ),
-
-                    "description": desc,
-
-                    # Probability of precipitation for this forecast point
-                    "pop": pop
-                })
+            daily_forecasts.append({
+                "date": date_obj.strftime('%d %b'),
+                "day": date_obj.strftime('%a'),
+                "temp": round(max(group["temps"])),
+                "min_temp": round(min(group["temps"])),
+                "description": day_condition,
+                "pop": max(group["pops"])
+            })
 
     # ======================================================
     # IMPORTANT:
@@ -710,6 +717,7 @@ def weather():
         "aqi": aqi_text,
 
         "chance_of_rain": f"{chance_of_rain}%",
+        "chance_of_rain_label": "Peak chance in next 24h",
 
         "hourly_rain": hourly_rain_timeline,
 
