@@ -11,7 +11,8 @@
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
         body { background-color: #0b1329; background-image: radial-gradient(circle at 50% 0%, #172554 0%, #0b1329 70%); color: #ffffff; min-height: 100vh; padding: 20px 40px; }
 
-        header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 15px; margin-bottom: 25px; }
+        /* ADDED: position: relative and z-index: 2000 to keep header/dropdown above the cards */
+        header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 15px; margin-bottom: 25px; position: relative; z-index: 2000; }
         .logo-area { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1.15rem; cursor: pointer; }
         .logo-area span { color: #3b82f6; }
         .nav-links { display: flex; gap: 30px; font-size: 0.9rem; color: #94a3b8; }
@@ -2543,7 +2544,7 @@
                             };
                             suggestionsBox.appendChild(div);
                         });
-                        suggestionsBox.style.display = 'block'; // FIXED HERE - Stack results vertically
+                        suggestionsBox.style.display = 'block';
                     } else {
                         suggestionsBox.style.display = 'none';
                     }
