@@ -344,16 +344,18 @@ def create_weather_insights(
 
 
 # ==========================================================
-# FORECAST INTELLIGENCE / ENSEMBLE GUIDANCE
+# FORECAST INTELLIGENCE / MULTI-MODEL CONSENSUS
 # ==========================================================
 #
-# Uses Open-Meteo's ECMWF IFS ensemble guidance. An ensemble
-# runs many slightly different forecasts to estimate uncertainty.
-# This endpoint is separate from the normal weather endpoint,
-# so it does not use Groq/Gemini quota.
+# Compares three global numerical weather prediction systems:
+# ECMWF IFS, NOAA GFS, and DWD ICON.
 #
-# Open-Meteo documents ECMWF IFS 0.25° ensemble data with
-# 51 members and hourly temperature/precipitation fields.
+# Open-Meteo exposes forecasts from multiple national weather
+# services and allows individual model selection. This endpoint
+# calculates a simple consensus/dispersion signal from the next
+# 24 forecast hours.
+#
+# This is guidance, NOT an official probability of correctness.
 # ==========================================================
 
 @app.route('/api/forecast-intelligence', methods=['GET'])
@@ -375,13 +377,23 @@ def forecast_intelligence():
             "error": "Invalid coordinates."
         }), 400
 
-    url = "https://ensemble-api.open-meteo.com/v1/ensemble"
+    base_url = "https://api.open-meteo.com/v1/forecast"
+
+    models = {
+        "ECMWF IFS": "ecmwf_ifs",
+        "NOAA GFS": "gfs_seamless",
+        "DWD ICON": "icon_seamless"
+    }
 
     params = {
         "latitude": latitude,
         "longitude": longitude,
-        "models": "ecmwf_ifs025",
-        "hourly": "temperature_2m,precipitation,wind_speed_10m",
+        "hourly": (
+            "temperature_2m,"
+            "precipitation_probability,"
+            "precipitation,"
+            "wind_speed_10m"
+        ),
         "forecast_days": 3,
         "timezone": "auto",
         "temperature_unit": "celsius",
@@ -389,256 +401,254 @@ def forecast_intelligence():
         "precipitation_unit": "mm"
     }
 
-    try:
-        response = requests.get(
-            url,
-            params=params,
-            timeout=20
-        )
-        response.raise_for_status()
-        payload = response.json()
+    model_results = {}
 
-    except requests.RequestException as e:
-        print(
-            f"Ensemble API error: {type(e).__name__}: {e}",
-            flush=True
-        )
+    for display_name, model_id in models.items():
+
+        request_params = dict(params)
+        request_params["models"] = model_id
+
+        try:
+            response = requests.get(
+                base_url,
+                params=request_params,
+                timeout=20
+            )
+            response.raise_for_status()
+            payload = response.json()
+
+            hourly = payload.get("hourly", {})
+
+            if hourly.get("time") and hourly.get("temperature_2m"):
+                model_results[display_name] = hourly
+
+        except requests.RequestException as e:
+            print(
+                f"{display_name} forecast error: "
+                f"{type(e).__name__}: {e}",
+                flush=True
+            )
+
+    if len(model_results) < 2:
         return jsonify({
-            "error": "Forecast intelligence is temporarily unavailable."
+            "error": "Not enough weather models responded for consensus."
         }), 502
 
-    hourly = payload.get("hourly", {})
-    times = hourly.get("time", [])
-
-    # Open-Meteo returns member columns such as:
-    # temperature_2m_member01, temperature_2m_member02, ...
-    temp_members = sorted(
-        key for key in hourly
-        if key.startswith("temperature_2m_member")
-    )
-
-    precip_members = sorted(
-        key for key in hourly
-        if key.startswith("precipitation_member")
-    )
-
-    wind_members = sorted(
-        key for key in hourly
-        if key.startswith("wind_speed_10m_member")
-    )
-
-    if not times or not temp_members:
-        return jsonify({
-            "error": "No ensemble forecast members were returned."
-        }), 502
-
-    # Use the next 24 forecast hours.
+    # Use the first 24 hours for the near-term consensus.
+    first_hourly = next(iter(model_results.values()))
+    times = first_hourly.get("time", [])
     horizon = min(24, len(times))
 
-    def finite_numbers(values):
-        result = []
-        for value in values:
-            try:
-                number = float(value)
-                if number == number and abs(number) != float("inf"):
-                    result.append(number)
-            except (TypeError, ValueError):
-                pass
-        return result
+    def safe_float(value):
+        try:
+            number = float(value)
+            if number == number and abs(number) != float("inf"):
+                return number
+        except (TypeError, ValueError):
+            pass
+        return None
 
-    def stats_at_hour(member_keys, hour_index):
-        values = finite_numbers(
-            [hourly[key][hour_index] for key in member_keys]
-        )
-
-        if not values:
-            return None
-
-        mean = sum(values) / len(values)
-
-        variance = sum(
-            (value - mean) ** 2
-            for value in values
-        ) / len(values)
-
-        spread = variance ** 0.5
-
-        ordered = sorted(values)
-        low_index = max(
-            0,
-            min(
-                len(ordered) - 1,
-                int(round(0.10 * (len(ordered) - 1)))
-            )
-        )
-        high_index = max(
-            0,
-            min(
-                len(ordered) - 1,
-                int(round(0.90 * (len(ordered) - 1)))
-            )
-        )
-
-        return {
-            "mean": mean,
-            "spread": spread,
-            "p10": ordered[low_index],
-            "p90": ordered[high_index],
-            "members": len(values)
-        }
-
-    temperature_stats = []
-    wind_stats = []
-    rain_probabilities = []
+    hourly_consensus = []
 
     for hour in range(horizon):
 
-        temp_stat = stats_at_hour(
-            temp_members,
-            hour
+        temperatures = []
+        rain_probabilities = []
+        precipitation = []
+        winds = []
+
+        for hourly in model_results.values():
+
+            if hour < len(hourly.get("temperature_2m", [])):
+                value = safe_float(
+                    hourly["temperature_2m"][hour]
+                )
+                if value is not None:
+                    temperatures.append(value)
+
+            if hour < len(hourly.get("precipitation_probability", [])):
+                value = safe_float(
+                    hourly["precipitation_probability"][hour]
+                )
+                if value is not None:
+                    rain_probabilities.append(value)
+
+            if hour < len(hourly.get("precipitation", [])):
+                value = safe_float(
+                    hourly["precipitation"][hour]
+                )
+                if value is not None:
+                    precipitation.append(value)
+
+            if hour < len(hourly.get("wind_speed_10m", [])):
+                value = safe_float(
+                    hourly["wind_speed_10m"][hour]
+                )
+                if value is not None:
+                    winds.append(value)
+
+        if not temperatures:
+            continue
+
+        temp_mean = sum(temperatures) / len(temperatures)
+        temp_spread = max(temperatures) - min(temperatures)
+
+        rain_mean = (
+            sum(rain_probabilities) / len(rain_probabilities)
+            if rain_probabilities else None
         )
 
-        if temp_stat:
-            temperature_stats.append({
-                "time": times[hour],
-                **temp_stat
-            })
+        rain_amount = (
+            sum(precipitation) / len(precipitation)
+            if precipitation else None
+        )
 
-        if wind_members:
-            wind_stat = stats_at_hour(
-                wind_members,
-                hour
+        wind_mean = (
+            sum(winds) / len(winds)
+            if winds else None
+        )
+
+        hourly_consensus.append({
+            "time": times[hour],
+            "temperature_mean": round(temp_mean, 1),
+            "temperature_spread": round(temp_spread, 1),
+            "rain_probability_mean": (
+                round(rain_mean)
+                if rain_mean is not None else None
+            ),
+            "precipitation_mean": (
+                round(rain_amount, 2)
+                if rain_amount is not None else None
+            ),
+            "wind_mean": (
+                round(wind_mean, 1)
+                if wind_mean is not None else None
             )
-            if wind_stat:
-                wind_stats.append({
-                    "time": times[hour],
-                    **wind_stat
-                })
+        })
 
-        if precip_members:
-
-            rain_values = finite_numbers([
-                hourly[key][hour]
-                for key in precip_members
-            ])
-
-            if rain_values:
-
-                # Probability that an ensemble member predicts
-                # measurable precipitation (> 0.1 mm).
-                wet_members = sum(
-                    1 for value in rain_values
-                    if value > 0.1
-                )
-
-                rain_probabilities.append({
-                    "time": times[hour],
-                    "probability": round(
-                        wet_members / len(rain_values) * 100
-                    )
-                })
-
-    if not temperature_stats:
+    if not hourly_consensus:
         return jsonify({
-            "error": "Temperature ensemble data is unavailable."
+            "error": "Unable to calculate model consensus."
         }), 502
 
-    spreads = [
-        item["spread"]
-        for item in temperature_stats
+    temp_spreads = [
+        item["temperature_spread"]
+        for item in hourly_consensus
     ]
 
-    mean_spread = sum(spreads) / len(spreads)
+    average_temp_spread = (
+        sum(temp_spreads) / len(temp_spreads)
+    )
 
-    max_spread = max(spreads)
+    max_temp_spread = max(temp_spreads)
 
-    # Simple uncertainty classification.
-    # This is a communication metric, not an official
-    # meteorological confidence score.
-    if mean_spread <= 1.5:
+    # A simple model-agreement score:
+    # <1.5°C average spread = strong agreement
+    # <3°C = moderate agreement
+    # otherwise = weaker agreement.
+    if average_temp_spread <= 1.5:
+        agreement = "Strong"
         confidence = "High"
-        confidence_note = "Ensemble members are closely grouped."
-    elif mean_spread <= 3.0:
+    elif average_temp_spread <= 3.0:
+        agreement = "Moderate"
         confidence = "Moderate"
-        confidence_note = "There is some forecast spread."
     else:
+        agreement = "Mixed"
         confidence = "Lower"
-        confidence_note = "The ensemble shows significant uncertainty."
 
-    rain_peak = max(
-        [item["probability"] for item in rain_probabilities],
-        default=0
+    # Find the largest model disagreement period.
+    peak_disagreement = max(
+        hourly_consensus,
+        key=lambda item: item["temperature_spread"]
     )
 
-    # Best estimate for the next 24h temperature.
-    next_24_mean = (
-        sum(item["mean"] for item in temperature_stats)
-        / len(temperature_stats)
-    )
+    # 24-hour consensus rain signal.
+    rain_values = [
+        item["rain_probability_mean"]
+        for item in hourly_consensus
+        if item["rain_probability_mean"] is not None
+    ]
 
-    temp_low = min(
-        item["p10"]
-        for item in temperature_stats
-    )
+    peak_rain = max(rain_values) if rain_values else None
 
-    temp_high = max(
-        item["p90"]
-        for item in temperature_stats
-    )
+    # Approximate next-24h temperature range from model means.
+    mean_temperatures = [
+        item["temperature_mean"]
+        for item in hourly_consensus
+    ]
 
-    # Maximum ensemble wind estimate, if available.
-    max_wind_mean = (
-        max(item["mean"] for item in wind_stats)
-        if wind_stats else None
-    )
+    next_24_low = min(mean_temperatures)
+    next_24_high = max(mean_temperatures)
+
+    model_summary = {}
+
+    for name, hourly in model_results.items():
+
+        values = [
+            safe_float(value)
+            for value in hourly.get("temperature_2m", [])[:horizon]
+        ]
+
+        values = [
+            value for value in values
+            if value is not None
+        ]
+
+        if values:
+            model_summary[name] = {
+                "mean_temperature": round(
+                    sum(values) / len(values),
+                    1
+                ),
+                "low": round(min(values), 1),
+                "high": round(max(values), 1)
+            }
 
     return jsonify({
 
-        "source": "ECMWF IFS ensemble via Open-Meteo",
+        "source": "ECMWF IFS + NOAA GFS + DWD ICON via Open-Meteo",
 
-        "member_count": len(temp_members),
+        "models_available": list(model_results.keys()),
+
+        "model_count": len(model_results),
 
         "confidence": confidence,
 
-        "confidence_note": confidence_note,
+        "agreement": agreement,
 
-        "mean_temperature_spread": round(
-            mean_spread,
-            2
+        "average_temperature_spread": round(
+            average_temp_spread,
+            1
         ),
 
         "max_temperature_spread": round(
-            max_spread,
-            2
-        ),
-
-        "next_24h_mean_temperature": round(
-            next_24_mean,
+            max_temp_spread,
             1
         ),
 
-        "temperature_p10": round(
-            temp_low,
-            1
-        ),
+        "peak_disagreement_time": peak_disagreement["time"],
 
-        "temperature_p90": round(
-            temp_high,
-            1
-        ),
+        "peak_rain_probability": peak_rain,
 
-        "peak_ensemble_rain_probability": rain_peak,
+        "next_24h_low": round(next_24_low, 1),
 
-        "max_mean_wind_kmh": (
-            round(max_wind_mean, 1)
-            if max_wind_mean is not None
-            else None
-        ),
+        "next_24h_high": round(next_24_high, 1),
 
-        "hourly": temperature_stats[:12],
+        "models": model_summary,
 
-        "rain_probability": rain_probabilities[:12]
+        "hourly": hourly_consensus[:12],
+
+        "message": (
+            "Model agreement is strong."
+            if agreement == "Strong"
+            else
+            "Models show some differences; confidence is moderate."
+            if agreement == "Moderate"
+            else
+            "Models disagree noticeably; treat the forecast with extra caution."
+        )
     })
+
 
 
 @app.route('/api/weather', methods=['GET'])
