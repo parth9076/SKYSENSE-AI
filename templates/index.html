@@ -562,6 +562,559 @@
             }
         }
 
+
+        /* =========================================================
+           MODERN FORECAST + AI INSIGHTS
+           ========================================================= */
+
+        .modern-page-head {
+            max-width: 1300px;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 18px;
+        }
+
+        .modern-page-head h1 {
+            font-size: clamp(1.65rem, 3vw, 2.35rem);
+            letter-spacing: -0.04em;
+            margin: 4px 0 5px;
+        }
+
+        .modern-page-head p {
+            color: #94a3b8;
+            font-size: .9rem;
+        }
+
+        .eyebrow {
+            color: #60a5fa;
+            font-size: .68rem;
+            font-weight: 700;
+            letter-spacing: .14em;
+        }
+
+        .forecast-status,
+        .ai-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #94a3b8;
+            font-size: .78rem;
+            background: rgba(255,255,255,.035);
+            border: 1px solid rgba(255,255,255,.07);
+            padding: 9px 12px;
+            border-radius: 999px;
+            white-space: nowrap;
+        }
+
+        .live-dot,
+        .ai-pulse {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #22c55e;
+            box-shadow: 0 0 12px rgba(34,197,94,.7);
+        }
+
+        .ai-pulse {
+            background: #a78bfa;
+            box-shadow: 0 0 12px rgba(167,139,250,.8);
+        }
+
+        .forecast-summary-grid {
+            max-width: 1300px;
+            margin: 0 auto 20px;
+            display: grid;
+            grid-template-columns: 1.2fr 1fr 1fr;
+            gap: 14px;
+        }
+
+        .forecast-highlight {
+            min-height: 145px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .forecast-highlight::after {
+            content: "";
+            position: absolute;
+            width: 130px;
+            height: 130px;
+            right: -60px;
+            bottom: -70px;
+            border-radius: 50%;
+            background: rgba(59,130,246,.12);
+            filter: blur(3px);
+        }
+
+        .big-range {
+            font-size: 2rem;
+            font-weight: 650;
+            letter-spacing: -.04em;
+            margin: 7px 0 3px;
+        }
+
+        .mini-caption {
+            color: #64748b;
+            font-size: .74rem;
+            line-height: 1.45;
+        }
+
+        .range-track,
+        .rain-meter {
+            height: 6px;
+            background: rgba(255,255,255,.07);
+            border-radius: 99px;
+            overflow: hidden;
+            margin-top: 14px;
+        }
+
+        .range-track span,
+        .rain-meter span {
+            display: block;
+            height: 100%;
+            width: 0%;
+            border-radius: inherit;
+            background: linear-gradient(90deg,#38bdf8,#3b82f6,#818cf8);
+            transition: width .5s ease;
+        }
+
+        .rain-meter span {
+            background: linear-gradient(90deg,#60a5fa,#38bdf8);
+        }
+
+        .forecast-main-card,
+        .forecast-detail-card {
+            max-width: 1300px;
+            margin: 0 auto 20px;
+        }
+
+        .forecast-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 16px;
+        }
+
+        .forecast-legend {
+            display: flex;
+            gap: 12px;
+            color: #64748b;
+            font-size: .7rem;
+        }
+
+        .forecast-legend span::before {
+            content: "•";
+            color: #60a5fa;
+            margin-right: 4px;
+        }
+
+        .modern-forecast-list {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+        }
+
+        .modern-forecast-card {
+            background: linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.018));
+            border: 1px solid rgba(255,255,255,.07);
+            border-radius: 15px;
+            padding: 15px 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: transform .2s ease, border-color .2s ease, background .2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .modern-forecast-card:hover,
+        .modern-forecast-card.selected {
+            transform: translateY(-3px);
+            border-color: rgba(96,165,250,.45);
+            background: linear-gradient(180deg, rgba(59,130,246,.12), rgba(255,255,255,.025));
+        }
+
+        .modern-forecast-card.today {
+            box-shadow: inset 0 2px 0 #3b82f6;
+        }
+
+        .mf-day {
+            font-weight: 700;
+            font-size: .88rem;
+        }
+
+        .mf-date {
+            color: #64748b;
+            font-size: .68rem;
+            margin-top: 3px;
+        }
+
+        .mf-icon {
+            font-size: 2rem;
+            margin: 13px 0 8px;
+        }
+
+        .mf-temp {
+            font-size: 1.05rem;
+            font-weight: 700;
+        }
+
+        .mf-low {
+            color: #64748b;
+            font-weight: 500;
+            margin-left: 4px;
+        }
+
+        .mf-rain {
+            margin-top: 12px;
+            color: #60a5fa;
+            font-size: .73rem;
+            font-weight: 600;
+        }
+
+        .mf-rainbar {
+            height: 4px;
+            background: rgba(255,255,255,.06);
+            border-radius: 99px;
+            margin-top: 6px;
+            overflow: hidden;
+        }
+
+        .mf-rainbar span {
+            display: block;
+            height: 100%;
+            background: #38bdf8;
+            border-radius: inherit;
+        }
+
+        .mf-condition {
+            color: #94a3b8;
+            font-size: .7rem;
+            margin-top: 8px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .forecast-detail-card #detailedForecastList > div {
+            border: 1px solid rgba(255,255,255,.055) !important;
+            background: rgba(255,255,255,.025) !important;
+            margin-bottom: 8px !important;
+            transition: background .2s ease;
+        }
+
+        .forecast-detail-card #detailedForecastList > div:hover {
+            background: rgba(59,130,246,.07) !important;
+        }
+
+        .insight-hero {
+            max-width: 1300px;
+            margin: 0 auto 18px;
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            padding: 24px;
+            background:
+                radial-gradient(circle at 15% 20%, rgba(59,130,246,.20), transparent 35%),
+                linear-gradient(135deg, rgba(17,24,39,.9), rgba(30,41,59,.65));
+            border-color: rgba(96,165,250,.16);
+        }
+
+        .insight-hero-icon {
+            width: 58px;
+            height: 58px;
+            flex: 0 0 58px;
+            display: grid;
+            place-items: center;
+            border-radius: 16px;
+            font-size: 1.7rem;
+            background: rgba(59,130,246,.13);
+            border: 1px solid rgba(96,165,250,.25);
+            color: #93c5fd;
+        }
+
+        .insight-hero-copy {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .insight-hero h2 {
+            font-size: clamp(1.15rem, 2.2vw, 1.65rem);
+            line-height: 1.25;
+            margin: 4px 0 5px;
+        }
+
+        .insight-hero p {
+            color: #94a3b8;
+            font-size: .82rem;
+        }
+
+        .confidence-badge {
+            color: #93c5fd;
+            background: rgba(59,130,246,.1);
+            border: 1px solid rgba(96,165,250,.2);
+            border-radius: 999px;
+            padding: 7px 10px;
+            font-size: .66rem;
+            font-weight: 700;
+            letter-spacing: .08em;
+        }
+
+        .insight-grid {
+            max-width: 1300px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+
+        .insight-card {
+            min-height: 190px;
+        }
+
+        .insight-wide {
+            grid-column: 1 / -1;
+        }
+
+        .signal-list,
+        .action-list {
+            display: grid;
+            gap: 8px;
+        }
+
+        .signal-row,
+        .action-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 11px 12px;
+            border-radius: 11px;
+            background: rgba(255,255,255,.025);
+            border: 1px solid rgba(255,255,255,.05);
+        }
+
+        .signal-label {
+            color: #94a3b8;
+            font-size: .76rem;
+        }
+
+        .signal-value {
+            font-size: .78rem;
+            font-weight: 700;
+        }
+
+        .action-row {
+            justify-content: flex-start;
+        }
+
+        .action-icon {
+            width: 28px;
+            height: 28px;
+            display: grid;
+            place-items: center;
+            border-radius: 8px;
+            background: rgba(59,130,246,.1);
+            flex: 0 0 28px;
+        }
+
+        .action-text {
+            font-size: .78rem;
+            color: #cbd5e1;
+            line-height: 1.35;
+        }
+
+        .ai-reading {
+            color: #dbeafe;
+            font-size: .98rem;
+            line-height: 1.8;
+            padding: 6px 0 15px;
+        }
+
+        .ai-reading strong {
+            color: #93c5fd;
+        }
+
+        .insight-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding-top: 13px;
+            border-top: 1px solid rgba(255,255,255,.06);
+            color: #64748b;
+            font-size: .7rem;
+        }
+
+        .ask-insight-btn {
+            border: 1px solid rgba(96,165,250,.25);
+            background: rgba(59,130,246,.09);
+            color: #93c5fd;
+            border-radius: 9px;
+            padding: 8px 11px;
+            cursor: pointer;
+            min-height: 36px;
+        }
+
+        .travel-modern {
+            color: #bfdbfe;
+            background: rgba(59,130,246,.08);
+            border: 1px solid rgba(59,130,246,.18);
+            border-radius: 12px;
+            padding: 14px;
+            line-height: 1.6;
+            font-size: .82rem;
+        }
+
+        .activity-score-grid {
+            display: grid;
+            grid-template-columns: repeat(2,1fr);
+            gap: 8px;
+        }
+
+        .modern-score {
+            padding: 10px;
+            border-radius: 10px;
+            background: rgba(255,255,255,.025);
+            border: 1px solid rgba(255,255,255,.05);
+        }
+
+        .modern-score-top {
+            display: flex;
+            justify-content: space-between;
+            font-size: .72rem;
+            margin-bottom: 7px;
+        }
+
+        .score-number {
+            color: #60a5fa;
+            font-weight: 700;
+        }
+
+        .score-bar {
+            height: 5px;
+            border-radius: 99px;
+            background: rgba(255,255,255,.06);
+            overflow: hidden;
+        }
+
+        .score-bar span {
+            display: block;
+            height: 100%;
+            border-radius: inherit;
+            background: linear-gradient(90deg,#38bdf8,#818cf8);
+        }
+
+        @media (max-width: 900px) {
+            .forecast-summary-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .forecast-summary-grid .forecast-highlight:last-child {
+                grid-column: 1 / -1;
+            }
+
+            .modern-forecast-list {
+                grid-template-columns: repeat(3,1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .modern-page-head {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .forecast-summary-grid,
+            .insight-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .forecast-summary-grid .forecast-highlight:last-child {
+                grid-column: auto;
+            }
+
+            .modern-forecast-list {
+                display: flex;
+                overflow-x: auto;
+                scroll-snap-type: x mandatory;
+                padding-bottom: 5px;
+                scrollbar-width: none;
+            }
+
+            .modern-forecast-list::-webkit-scrollbar {
+                display: none;
+            }
+
+            .modern-forecast-card {
+                min-width: 150px;
+                scroll-snap-align: start;
+            }
+
+            .insight-wide {
+                grid-column: auto;
+            }
+
+            .insight-hero {
+                align-items: flex-start;
+                flex-wrap: wrap;
+            }
+
+            .confidence-badge {
+                margin-left: 76px;
+                margin-top: -10px;
+            }
+
+            .forecast-toolbar {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .modern-page-head h1 {
+                font-size: 1.55rem;
+            }
+
+            .forecast-status,
+            .ai-status {
+                font-size: .7rem;
+            }
+
+            .forecast-highlight {
+                min-height: 130px;
+            }
+
+            .big-range {
+                font-size: 1.65rem;
+            }
+
+            .insight-hero {
+                padding: 17px;
+            }
+
+            .insight-hero-icon {
+                width: 48px;
+                height: 48px;
+                flex-basis: 48px;
+            }
+
+            .confidence-badge {
+                margin-left: 65px;
+            }
+
+            .activity-score-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .insight-footer {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+        }
+
     </style>
 </head>
 <body>
@@ -652,9 +1205,106 @@
         </div>
     </div>
 
-    <!-- Additional Views -->
-    <div id="view-forecast" class="view-section"><div class="card" style="max-width: 900px; margin: 0 auto;"><h2>Detailed Extended Forecast</h2><div id="detailedForecastList"></div></div></div>
-    <div id="view-insights" class="view-section"><div class="card" style="max-width: 900px; margin: 0 auto;"><h2>Deep Neural Analysis</h2><div class="ai-text" id="detailedAiDisplay"></div></div></div>
+    <!-- Modern Forecast View -->
+    <div id="view-forecast" class="view-section">
+        <div class="modern-page-head">
+            <div>
+                <div class="eyebrow">FORECAST CENTER</div>
+                <h1>Plan your next 5 days</h1>
+                <p>Temperature, precipitation and activity conditions at a glance.</p>
+            </div>
+            <div class="forecast-status"><span class="live-dot"></span> Live weather data</div>
+        </div>
+
+        <div class="forecast-summary-grid">
+            <div class="forecast-highlight card">
+                <div class="section-header">🌡️ Temperature Outlook</div>
+                <div class="big-range" id="forecastRangeText">--° → --°</div>
+                <div class="mini-caption" id="forecastRangeCaption">Waiting for forecast data...</div>
+                <div class="range-track"><span id="forecastRangeFill"></span></div>
+            </div>
+            <div class="forecast-highlight card">
+                <div class="section-header">🌧️ Rain Watch</div>
+                <div class="big-range" id="forecastRainText">--%</div>
+                <div class="mini-caption" id="forecastRainCaption">Highest upcoming rain probability</div>
+                <div class="rain-meter"><span id="forecastRainFill"></span></div>
+            </div>
+            <div class="forecast-highlight card">
+                <div class="section-header">🧭 Planning Signal</div>
+                <div class="big-range" id="forecastPlanText">--</div>
+                <div class="mini-caption" id="forecastPlanCaption">Based on temperature and rain probability</div>
+            </div>
+        </div>
+
+        <div class="card forecast-main-card">
+            <div class="forecast-toolbar">
+                <div>
+                    <div class="section-header">📅 5-Day Weather Timeline</div>
+                    <div class="mini-caption">Tap a day to highlight its conditions.</div>
+                </div>
+                <div class="forecast-legend"><span>High</span><span>Low</span><span>Rain</span></div>
+            </div>
+            <div id="modernForecastList" class="modern-forecast-list"></div>
+        </div>
+
+        <div class="card forecast-detail-card">
+            <div class="section-header">🔎 Detailed Forecast</div>
+            <div id="detailedForecastList"></div>
+        </div>
+    </div>
+
+    <!-- Modern AI Insights View -->
+    <div id="view-insights" class="view-section">
+        <div class="modern-page-head">
+            <div>
+                <div class="eyebrow">AI WEATHER LAB</div>
+                <h1>SkySense Insights</h1>
+                <p>Turn live weather signals into simple decisions.</p>
+            </div>
+            <div class="ai-status"><span class="ai-pulse"></span> SkySense analysis</div>
+        </div>
+
+        <div class="insight-hero card">
+            <div class="insight-hero-icon">✦</div>
+            <div class="insight-hero-copy">
+                <div class="eyebrow">SMART SUMMARY</div>
+                <h2 id="insightHeadline">Analyzing your local conditions...</h2>
+                <p id="insightSubline">SkySense is combining temperature, rain, humidity, wind and air-quality signals.</p>
+            </div>
+            <div class="confidence-badge" id="insightConfidence">LIVE SIGNAL</div>
+        </div>
+
+        <div class="insight-grid">
+            <div class="card insight-card">
+                <div class="section-header">🧠 What SkySense sees</div>
+                <div id="insightSignals" class="signal-list"></div>
+            </div>
+
+            <div class="card insight-card">
+                <div class="section-header">🎯 Best decisions</div>
+                <div id="insightActions" class="action-list"></div>
+            </div>
+
+            <div class="card insight-card insight-wide">
+                <div class="section-header">✨ AI Weather Insight</div>
+                <div class="ai-reading" id="detailedAiDisplay"></div>
+                <div class="insight-footer">
+                    <span>Based on current weather + forecast signals</span>
+                    <button class="ask-insight-btn" onclick="toggleChat()">Ask SkySense ↗</button>
+                </div>
+            </div>
+
+            <div class="card insight-card">
+                <div class="section-header">🧳 Travel Advisor</div>
+                <div class="travel-modern" id="modernTravelDisplay">Preparing recommendations...</div>
+            </div>
+
+            <div class="card insight-card">
+                <div class="section-header">🏆 Activity Scores</div>
+                <div id="modernActivityScores" class="activity-score-grid"></div>
+            </div>
+        </div>
+    </div>
 
     <!-- Chatbot Widget -->
     <div class="chat-widget">
@@ -907,6 +1557,149 @@
             });
         }
 
+
+        function getForecastWeatherIcon(description) {
+            const d = (description || '').toLowerCase();
+            if (d.includes('thunder')) return '⛈️';
+            if (d.includes('rain') || d.includes('drizzle')) return '🌧️';
+            if (d.includes('snow')) return '❄️';
+            if (d.includes('mist') || d.includes('fog') || d.includes('haze')) return '🌫️';
+            if (d.includes('cloud')) return '☁️';
+            return '☀️';
+        }
+
+        function getPlanSignal(maxRain, avgTemp) {
+            if (maxRain >= 70) return ['Rain-aware', 'Keep an umbrella or indoor backup plan.'];
+            if (avgTemp >= 35) return ['Hot', 'Plan outdoor activities around cooler hours.'];
+            if (avgTemp <= 10) return ['Cool', 'A light warm layer may be useful.'];
+            return ['Favorable', 'Good overall conditions for flexible plans.'];
+        }
+
+        function renderModernForecast(forecast) {
+            const container = document.getElementById('modernForecastList');
+            if (!container) return;
+            container.innerHTML = '';
+
+            const days = (forecast || []).slice(0, 5);
+            if (!days.length) {
+                container.innerHTML = '<div class="mini-caption">Forecast data is currently unavailable.</div>';
+                return;
+            }
+
+            days.forEach((day, index) => {
+                const card = document.createElement('div');
+                card.className = 'modern-forecast-card' + (index === 0 ? ' today selected' : '');
+                const rain = Number.isFinite(Number(day.pop)) ? Math.max(0, Math.min(100, Number(day.pop))) : null;
+                card.innerHTML = `
+                    <div class="mf-day">${index === 0 ? 'Today' : (day.day || '--')}</div>
+                    <div class="mf-date">${day.date || '--'}</div>
+                    <div class="mf-icon">${getForecastWeatherIcon(day.description)}</div>
+                    <div class="mf-temp">${day.temp ?? '--'}° <span class="mf-low">${day.min_temp ?? '--'}°</span></div>
+                    <div class="mf-rain">💧 ${rain === null ? "--" : rain + "%"} rain</div>
+                    <div class="mf-rainbar"><span style="width:${rain === null ? 0 : rain}%"></span></div>
+                    <div class="mf-condition">${day.description || 'Unknown'}</div>
+                `;
+                card.addEventListener('click', () => {
+                    document.querySelectorAll('.modern-forecast-card').forEach(c => c.classList.remove('selected'));
+                    card.classList.add('selected');
+                });
+                container.appendChild(card);
+            });
+
+            const temps = days.map(d => Number(d.temp)).filter(Number.isFinite);
+            const lows = days.map(d => Number(d.min_temp)).filter(Number.isFinite);
+            const highsMax = temps.length ? Math.max(...temps) : 0;
+            const lowsMin = lows.length ? Math.min(...lows) : 0;
+            const rainValues = days.map(d => Number(d.pop)).filter(Number.isFinite); const maxRain = rainValues.length ? Math.max(...rainValues) : (parseInt(document.getElementById('rainDisplay')?.textContent) || 0);
+            const avgTemp = temps.length ? temps.reduce((a,b) => a+b, 0) / temps.length : 0;
+
+            document.getElementById('forecastRangeText').textContent = `${highsMax}° / ${lowsMin}°`;
+            document.getElementById('forecastRangeCaption').textContent = 'Warmest high / coolest low across the next 5 days';
+            document.getElementById('forecastRangeFill').style.width = `${Math.min(100, Math.max(10, ((highsMax + 10) / 55) * 100))}%`;
+
+            document.getElementById('forecastRainText').textContent = `${maxRain}%`;
+            document.getElementById('forecastRainCaption').textContent = 'Highest rain probability in the displayed forecast';
+            document.getElementById('forecastRainFill').style.width = `${maxRain}%`;
+
+            const plan = getPlanSignal(maxRain, avgTemp);
+            document.getElementById('forecastPlanText').textContent = plan[0];
+            document.getElementById('forecastPlanCaption').textContent = plan[1];
+        }
+
+        function renderModernInsights(data) {
+            const signals = document.getElementById('insightSignals');
+            const actions = document.getElementById('insightActions');
+            const scores = document.getElementById('modernActivityScores');
+
+            if (!signals || !actions || !scores) return;
+
+            const rain = parseInt(data.chance_of_rain) || 0;
+            const temp = Number(data.temperature);
+            const humidity = Number(data.humidity);
+            const wind = Math.round(Number(data.wind_speed) * 3.6);
+            const aqi = data.aqi || 'Unknown';
+
+            const comfort = temp >= 34 ? 'Warm' : temp <= 10 ? 'Cool' : 'Comfortable';
+            const rainSignal = rain >= 70 ? 'High' : rain >= 40 ? 'Moderate' : 'Low';
+
+            signals.innerHTML = `
+                <div class="signal-row"><span class="signal-label">Temperature</span><span class="signal-value">${Math.round(temp)}°C · ${comfort}</span></div>
+                <div class="signal-row"><span class="signal-label">Rain probability</span><span class="signal-value">${rain}% · ${rainSignal}</span></div>
+                <div class="signal-row"><span class="signal-label">Humidity</span><span class="signal-value">${humidity}%</span></div>
+                <div class="signal-row"><span class="signal-label">Wind</span><span class="signal-value">${wind} km/h · ${data.wind_dir || '--'}</span></div>
+                <div class="signal-row"><span class="signal-label">Air quality</span><span class="signal-value">${aqi}</span></div>
+            `;
+
+            const actionItems = [];
+            if (rain >= 60) actionItems.push(['☔', 'Carry rain protection and keep an indoor backup plan.']);
+            else actionItems.push(['☀️', 'Outdoor plans have a lower chance of rain disruption.']);
+            if (temp >= 33) actionItems.push(['💧', 'Stay hydrated and avoid long exposure during peak heat.']);
+            else if (temp <= 12) actionItems.push(['🧥', 'A light warm layer may make outdoor plans more comfortable.']);
+            else actionItems.push(['🌤️', 'Temperature looks broadly comfortable for outdoor activity.']);
+            if (wind >= 35) actionItems.push(['💨', 'Expect noticeable wind; take extra care on two-wheelers.']);
+            else actionItems.push(['🚶', 'Wind conditions look relatively manageable.']);
+
+            actions.innerHTML = actionItems.map(item => `
+                <div class="action-row">
+                    <div class="action-icon">${item[0]}</div>
+                    <div class="action-text">${item[1]}</div>
+                </div>
+            `).join('');
+
+            const insightText = (data.ai_summary || 'Weather analysis is ready.');
+            document.getElementById('insightHeadline').textContent =
+                rain >= 60 ? 'Plan around changing conditions.' :
+                temp >= 34 ? 'Heat is the main factor today.' :
+                'Conditions look broadly favorable.';
+
+            document.getElementById('insightSubline').textContent =
+                `${data.city || 'Your location'} · ${Math.round(temp)}°C · ${data.description || 'Current conditions'}`;
+
+            document.getElementById('insightConfidence').textContent = 'LIVE WEATHER SIGNAL';
+            document.getElementById('detailedAiDisplay').innerHTML = insightText;
+            document.getElementById('modernTravelDisplay').textContent =
+                data.travel_advice || 'Travel recommendations will appear here.';
+
+            const activityMap = [
+                ['🚴 Cycling', data.activities?.cycling],
+                ['🏃 Running', data.activities?.running],
+                ['🥾 Hiking', data.activities?.hiking],
+                ['📸 Photography', data.activities?.photography],
+                ['🏍️ Motorcycling', data.activities?.motorcycling]
+            ];
+
+            scores.innerHTML = activityMap.map(([label, value]) => {
+                const match = String(value || '').match(/(\d+(?:\.\d+)?)/);
+                const score = match ? Math.max(0, Math.min(10, Number(match[1]))) : 0;
+                return `
+                    <div class="modern-score">
+                        <div class="modern-score-top"><span>${label}</span><span class="score-number">${value || '--/10'}</span></div>
+                        <div class="score-bar"><span style="width:${score * 10}%"></span></div>
+                    </div>
+                `;
+            }).join('');
+        }
+
         function updateDashboard(data) {
             document.getElementById('locationDisplay').innerText = `📍 ${data.city}`;
             document.getElementById('chatCityName').innerText = data.city;
@@ -968,6 +1761,8 @@
             });
 
             updateTrendChart(data.forecast);
+            renderModernForecast(data.forecast);
+            renderModernInsights(data);
         }
     </script>
 </body>
