@@ -2799,73 +2799,107 @@
         function detectUserLocation() {
             const DEFAULT_CITY = 'Ahmednagar';
 
+            // Show a useful state instead of leaving the dashboard at "--".
+            function setLocationStatus(text) {
+                const el = document.getElementById('locationDisplay');
+                if (el) el.textContent = `📍 ${text}`;
+            }
+
             function useLastKnownLocation() {
                 try {
                     const saved = localStorage.getItem('skysense_last_location');
 
-                    if (saved) {
-                        const location = JSON.parse(saved);
+                    if (!saved) return false;
 
-                        if (
-                            location &&
-                            Number.isFinite(Number(location.lat)) &&
-                            Number.isFinite(Number(location.lon))
-                        ) {
-                            getWeatherByCoords(
-                                Number(location.lat),
-                                Number(location.lon),
-                                location.name || DEFAULT_CITY
-                            );
-                            return true;
-                        }
+                    const location = JSON.parse(saved);
+
+                    if (
+                        location &&
+                        Number.isFinite(Number(location.lat)) &&
+                        Number.isFinite(Number(location.lon))
+                    ) {
+                        setLocationStatus(
+                            location.name || 'Using last known location...'
+                        );
+
+                        getWeatherByCoords(
+                            Number(location.lat),
+                            Number(location.lon),
+                            location.name || DEFAULT_CITY
+                        );
+
+                        return true;
                     }
                 } catch (err) {
-                    console.warn('Could not read saved location:', err);
+                    console.warn(
+                        'SkySense: saved location error:',
+                        err
+                    );
                 }
 
                 return false;
             }
 
             if (!navigator.geolocation) {
+                console.warn(
+                    'SkySense: browser geolocation is not supported.'
+                );
+
+                setLocationStatus(
+                    'Location unavailable — use search'
+                );
+
                 if (!useLastKnownLocation()) {
                     getWeatherByName(DEFAULT_CITY);
                 }
+
                 return;
             }
 
             showLoading();
+            setLocationStatus('Detecting your location...');
 
-            const options = {
-                enableHighAccuracy: true,
-                timeout: 15000,
-                maximumAge: 300000
-            };
+            let finished = false;
+            let bestPosition = null;
+            let watchId = null;
 
-            navigator.geolocation.getCurrentPosition(
-                async function(position) {
-                    const lat = position.coords.latitude;
-                    const lon = position.coords.longitude;
-                    const accuracy = Number(position.coords.accuracy);
+            function finishWithPosition(position) {
+                if (finished) return;
+                finished = true;
 
-                    console.log(
-                        `SkySense GPS: ${lat}, ${lon} | accuracy: ${accuracy}m`
+                if (watchId !== null) {
+                    navigator.geolocation.clearWatch(watchId);
+                }
+
+                const lat = position.coords.latitude;
+                const lon = position.coords.longitude;
+                const accuracy = Number(position.coords.accuracy);
+
+                console.log(
+                    `SkySense GPS: ${lat}, ${lon} | accuracy: ${accuracy}m`
+                );
+
+                // Save exact coordinates immediately. Reverse geocoding is
+                // only used to obtain a friendly display name.
+                let locationName = 'Current Location';
+
+                try {
+                    localStorage.setItem(
+                        'skysense_last_location',
+                        JSON.stringify({
+                            lat,
+                            lon,
+                            name: locationName,
+                            accuracy,
+                            savedAt: Date.now()
+                        })
                     );
+                } catch (_) {}
 
-                    // Desktop browsers can sometimes return an IP/Wi-Fi
-                    // location several kilometres away. If the reported
-                    // accuracy is poor, prefer the user's configured home
-                    // location instead of showing a misleading city.
-                    if (
-                        !Number.isFinite(accuracy) ||
-                        accuracy > 10000
-                    ) {
-                        console.warn(
-                            'Low-accuracy location. Using the default city.'
-                        );
-                        getWeatherByName(DEFAULT_CITY);
-                        return;
-                    }
-
+                // Use the coordinates even if accuracy is not perfect.
+                // The previous version rejected locations >10 km, which
+                // could make desktop location appear to be "not detected".
+                (async function resolveLocationName() {
                     try {
                         const geoRes = await fetch(
                             `https://nominatim.openstreetmap.org/reverse?format=json&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}&zoom=18&addressdetails=1`,
@@ -2876,85 +2910,152 @@
                             }
                         );
 
-                        if (!geoRes.ok) {
-                            throw new Error(
-                                `Reverse geocoding failed: HTTP ${geoRes.status}`
-                            );
+                        if (geoRes.ok) {
+                            const geoData = await geoRes.json();
+                            const address = geoData.address || {};
+
+                            const neighborhood =
+                                address.suburb ||
+                                address.neighbourhood ||
+                                address.residential ||
+                                address.village;
+
+                            const city =
+                                address.city ||
+                                address.town ||
+                                address.municipality ||
+                                address.county;
+
+                            if (neighborhood && city) {
+                                locationName =
+                                    `${neighborhood}, ${city}`;
+                            } else if (city) {
+                                locationName = city;
+                            } else if (geoData.display_name) {
+                                locationName =
+                                    geoData.display_name.split(',').slice(0, 2).join(', ');
+                            }
                         }
-
-                        const geoData = await geoRes.json();
-                        const address = geoData.address || {};
-
-                        const neighborhood =
-                            address.suburb ||
-                            address.neighbourhood ||
-                            address.residential ||
-                            address.village;
-
-                        const city =
-                            address.city ||
-                            address.town ||
-                            address.municipality ||
-                            address.county;
-
-                        const state =
-                            address.state || '';
-
-                        let locationName = city || DEFAULT_CITY;
-
-                        if (neighborhood && city) {
-                            locationName = `${neighborhood}, ${city}`;
-                        }
-
-                        try {
-                                localStorage.setItem(
-                                    'skysense_last_location',
-                                    JSON.stringify({
-                                        lat,
-                                        lon,
-                                        name: locationName,
-                                        savedAt: Date.now()
-                                    })
-                                );
-                            } catch (_) {}
-
-                            getWeatherByCoords(
-                                lat,
-                                lon,
-                                locationName
-                            );
-                        }
-
                     } catch (err) {
                         console.warn(
-                            'Reverse geocoding failed:',
+                            'SkySense reverse geocoding unavailable:',
                             err
                         );
-
-                        // GPS coordinates remain usable even if Nominatim
-                        // is temporarily unavailable.
-                        getWeatherByCoords(
-                            lat,
-                            lon,
-                            DEFAULT_CITY
-                        );
                     }
-                },
 
+                    try {
+                        localStorage.setItem(
+                            'skysense_last_location',
+                            JSON.stringify({
+                                lat,
+                                lon,
+                                name: locationName,
+                                accuracy,
+                                savedAt: Date.now()
+                            })
+                        );
+                    } catch (_) {}
+
+                    setLocationStatus(locationName);
+                    getWeatherByCoords(
+                        lat,
+                        lon,
+                        locationName
+                    );
+                })();
+            }
+
+            function handlePosition(position) {
+                const accuracy = Number(position.coords.accuracy);
+
+                // Prefer a reasonably accurate result, but do not require it.
+                if (
+                    !bestPosition ||
+                    accuracy < Number(bestPosition.coords.accuracy)
+                ) {
+                    bestPosition = position;
+                }
+
+                // Finish quickly when accuracy is good.
+                if (Number.isFinite(accuracy) && accuracy <= 1000) {
+                    finishWithPosition(position);
+                }
+            }
+
+            function handleError(error) {
+                console.warn(
+                    'SkySense geolocation error:',
+                    error.code,
+                    error.message
+                );
+
+                if (finished) return;
+
+                // If we already received a position, use the best one instead
+                // of throwing it away because a later GPS update failed.
+                if (bestPosition) {
+                    finishWithPosition(bestPosition);
+                    return;
+                }
+
+                if (!useLastKnownLocation()) {
+                    setLocationStatus(
+                        'Location unavailable — use search'
+                    );
+                    getWeatherByName(DEFAULT_CITY);
+                }
+            }
+
+            // First request: normal high-accuracy GPS.
+            navigator.geolocation.getCurrentPosition(
+                handlePosition,
                 function(error) {
                     console.warn(
-                        'Browser location unavailable:',
+                        'Initial location request:',
                         error.code,
                         error.message
                     );
 
-                    if (!useLastKnownLocation()) {
-                        getWeatherByName(DEFAULT_CITY);
-                    }
-                },
+                    // Keep trying with watchPosition. This is particularly
+                    // useful on desktops where Chrome initially returns an
+                    // approximate Wi-Fi/IP position.
+                    if (error.code !== 1) {
+                        try {
+                            watchId = navigator.geolocation.watchPosition(
+                                handlePosition,
+                                handleError,
+                                {
+                                    enableHighAccuracy: true,
+                                    timeout: 20000,
+                                    maximumAge: 0
+                                }
+                            );
 
-                options
-            )
+                            setTimeout(() => {
+                                if (!finished && bestPosition) {
+                                    finishWithPosition(bestPosition);
+                                } else if (!finished) {
+                                    handleError(error);
+                                }
+                            }, 12000);
+
+                            return;
+                        } catch (watchError) {
+                            console.warn(
+                                'SkySense watchPosition error:',
+                                watchError
+                            );
+                        }
+                    }
+
+                    handleError(error);
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 20000,
+                    maximumAge: 0
+                }
+            );
         }
 
         function switchTab(tabName) {
