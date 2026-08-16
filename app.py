@@ -10,24 +10,30 @@ load_dotenv()
 app = Flask(__name__)
 
 # ==========================================================
-# GEMINI AI CONFIGURATION
+# CONFIGURATION
 # ==========================================================
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+OPENWEATHER_API_KEY = os.getenv("OPENWEATHER_API_KEY")
 
 if not GEMINI_API_KEY:
     raise RuntimeError("GEMINI_API_KEY is not configured.")
 
+if not OPENWEATHER_API_KEY:
+    raise RuntimeError("OPENWEATHER_API_KEY is not configured.")
+
+# Gemini is now used ONLY by the chatbot.
+# /api/weather does NOT call Gemini anymore.
 client = genai.Client(api_key=GEMINI_API_KEY)
 
 GEMINI_MODEL = "gemini-3.5-flash"
 
 
-def generate_ai_text(prompt):
-    """
-    Send a prompt to Gemini and return the generated text.
-    """
+# ==========================================================
+# GEMINI HELPER
+# ==========================================================
 
+def generate_ai_text(prompt):
     response = client.models.generate_content(
         model=GEMINI_MODEL,
         contents=prompt
@@ -40,7 +46,7 @@ def generate_ai_text(prompt):
 
 
 # ==========================================================
-# HOME PAGE
+# HOME
 # ==========================================================
 
 @app.route('/')
@@ -49,7 +55,7 @@ def home():
 
 
 # ==========================================================
-# AI CHATBOT
+# GENERAL AI CHATBOT
 # ==========================================================
 
 @app.route('/api/chat', methods=['POST'])
@@ -58,91 +64,57 @@ def chat():
     data = request.get_json(silent=True) or {}
 
     user_message = (data.get('message') or '').strip()
-
     weather_context = data.get('context') or (
         "No current weather information is available."
     )
 
-    # Empty message protection
     if not user_message:
         return jsonify({
             "reply": "Please enter a question."
         }), 400
 
-    # ======================================================
-    # UNIVERSAL AI CHATBOT PROMPT
-    # ======================================================
-
     prompt = f"""
 You are SkySense AI, an intelligent, friendly and helpful AI assistant.
 
-You are NOT restricted to predefined questions.
+The user can ask ANY question. Do not restrict the user to predefined
+weather questions.
 
-The user can ask you ANY question.
+If the question is related to weather, use the current weather context
+below.
 
-You can answer:
+Weather-related topics include:
+- Current weather
+- Forecasts
+- Rain
+- Temperature
+- Humidity
+- Wind
+- Air quality
+- Travel
+- Clothing
+- Cycling
+- Running
+- Hiking
+- Photography
+- Motorcycling
+- Weather science
+- Outdoor activities
 
-- Weather questions
-- Weather forecast questions
-- Temperature questions
-- Rain questions
-- Humidity questions
-- Wind questions
-- Air quality questions
-- Travel questions
-- Outdoor activity questions
-- Clothing recommendations
-- Cycling questions
-- Running questions
-- Hiking questions
-- Motorcycle riding questions
-- Photography questions
-- Weather science questions
-- General knowledge questions
-- Programming questions
-- Computer science questions
-- Cloud computing questions
-- AI and machine learning questions
-- Study-related questions
-- Technology questions
-- Everyday questions
-- General conversation
+For questions unrelated to weather, answer normally using your general
+knowledge.
 
-IMPORTANT:
+Do not mention that you are restricted to weather questions.
 
-If the question is related to the weather, use the live weather
-context provided below.
+Keep simple questions concise. For questions requiring explanation,
+provide enough detail to make the answer useful.
 
-If the question is NOT related to weather, answer it normally using
-your general knowledge.
-
-Do NOT say that the user can only ask weather questions.
-
-Do NOT restrict yourself to the predefined suggestion buttons
-shown in the user interface.
-
-Answer naturally like a helpful AI assistant.
-
-For simple questions, give a concise answer.
-
-For questions that require explanation, provide enough detail to
-make the answer easy to understand.
-
-If the user asks for a comparison, explain the important differences.
-
-If the user asks for instructions, provide clear step-by-step guidance.
-
-If the user asks about programming, provide useful code when appropriate.
-
-If the user asks about weather conditions, make your answer specific
-to the current location and weather context when possible.
+If the user asks for programming, computer science, AI, cloud computing,
+technology, study help, or general knowledge, answer normally.
 
 CURRENT WEATHER CONTEXT:
-
 {weather_context}
 
 USER QUESTION:
-
 {user_message}
 """
 
@@ -161,12 +133,193 @@ USER QUESTION:
             flush=True
         )
 
+        # Specific response for quota exhaustion
+        if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
+
+            return jsonify({
+                "reply": (
+                    "SkySense AI has temporarily reached its AI request "
+                    "limit. Please try again later."
+                )
+            }), 429
+
         return jsonify({
             "reply": (
                 "I'm having trouble connecting to my AI network "
                 "right now. Please try again."
             )
         }), 500
+
+
+# ==========================================================
+# RULE-BASED WEATHER INSIGHTS
+#
+# IMPORTANT:
+# This function intentionally does NOT call Gemini.
+# It prevents every page refresh from consuming Gemini quota.
+# ==========================================================
+
+def create_weather_insights(
+    city,
+    temp,
+    feels_like,
+    description,
+    humidity,
+    wind_speed,
+    aqi_text,
+    chance_of_rain
+):
+
+    wind_kmh = round(wind_speed * 3.6)
+
+    # ------------------------------------------------------
+    # Weather insight
+    # ------------------------------------------------------
+
+    if chance_of_rain >= 70:
+        rain_advice = (
+            f"There is a high chance of rain ({chance_of_rain}%), "
+            "so keep an umbrella or rain protection nearby."
+        )
+    elif chance_of_rain >= 40:
+        rain_advice = (
+            f"There is a moderate chance of rain ({chance_of_rain}%), "
+            "so conditions may change later in the day."
+        )
+    else:
+        rain_advice = (
+            f"The rain chance is relatively low at {chance_of_rain}%, "
+            "so outdoor plans are less likely to be disrupted by rain."
+        )
+
+    if temp >= 35:
+        temperature_advice = (
+            "Temperatures are very high, so limit prolonged exposure "
+            "to direct sunlight and stay hydrated."
+        )
+    elif temp >= 30:
+        temperature_advice = (
+            "It is warm outside, so lighter clothing and regular hydration "
+            "are recommended."
+        )
+    elif temp <= 10:
+        temperature_advice = (
+            "Temperatures are cool, so a warm outer layer may be useful."
+        )
+    else:
+        temperature_advice = (
+            "Temperatures are in a generally comfortable range for many "
+            "outdoor activities."
+        )
+
+    if humidity >= 80:
+        humidity_advice = (
+            "Humidity is high, which can make it feel warmer and less "
+            "comfortable during exercise."
+        )
+    elif humidity <= 35:
+        humidity_advice = (
+            "Humidity is relatively low, so hydration can be important "
+            "during longer outdoor activities."
+        )
+    else:
+        humidity_advice = (
+            "Humidity is at a moderate level."
+        )
+
+    insight_text = (
+        f"Conditions in {city} are currently {description} at "
+        f"{round(temp)}°C, with a feels-like temperature of "
+        f"{round(feels_like)}°C. {rain_advice} {temperature_advice}"
+    )
+
+    # ------------------------------------------------------
+    # Travel advice
+    # ------------------------------------------------------
+
+    if chance_of_rain >= 60:
+        travel_text = (
+            "Carry an umbrella or rain jacket, protect electronics, "
+            "and allow extra travel time if roads become wet."
+        )
+    elif temp >= 33:
+        travel_text = (
+            "Wear light clothing, carry water, and consider avoiding "
+            "long periods outdoors during the hottest part of the day."
+        )
+    elif aqi_text in ("Poor", "Very Poor"):
+        travel_text = (
+            "Consider reducing prolonged outdoor exposure and carry "
+            "appropriate air-quality protection if needed."
+        )
+    else:
+        travel_text = (
+            "Conditions look generally suitable for travel; "
+            "carry water and dress according to the current temperature."
+        )
+
+    # ------------------------------------------------------
+    # Activity scoring
+    # ------------------------------------------------------
+
+    def base_score():
+        score = 10
+
+        if chance_of_rain >= 80:
+            score -= 4
+        elif chance_of_rain >= 60:
+            score -= 3
+        elif chance_of_rain >= 40:
+            score -= 1
+
+        if temp >= 38 or temp <= 5:
+            score -= 3
+        elif temp >= 34 or temp <= 10:
+            score -= 2
+
+        if humidity >= 85:
+            score -= 2
+        elif humidity >= 75:
+            score -= 1
+
+        if wind_kmh >= 45:
+            score -= 2
+        elif wind_kmh >= 30:
+            score -= 1
+
+        if aqi_text == "Poor":
+            score -= 2
+        elif aqi_text == "Very Poor":
+            score -= 4
+        elif aqi_text == "Moderate":
+            score -= 1
+
+        return max(1, min(10, score))
+
+    general_score = base_score()
+
+    cycling = general_score
+    running = max(1, general_score - (1 if humidity >= 75 else 0))
+    hiking = general_score
+    photography = min(
+        10,
+        general_score + (
+            1 if chance_of_rain < 30 and temp < 34 else 0
+        )
+    )
+    motorcycling = general_score
+
+    return (
+        insight_text,
+        travel_text,
+        {
+            "cycling": f"{cycling}/10",
+            "running": f"{running}/10",
+            "hiking": f"{hiking}/10",
+            "photography": f"{photography}/10",
+            "motorcycling": f"{motorcycling}/10"
+        }
+    )
 
 
 # ==========================================================
@@ -181,18 +334,11 @@ def weather():
     lat = request.args.get('lat')
     lon = request.args.get('lon')
 
-    weather_api_key = os.getenv("OPENWEATHER_API_KEY")
-
-    if not weather_api_key:
-        return jsonify({
-            "error": "OPENWEATHER_API_KEY is not configured on the server."
-        }), 500
-
     resolved_city_name = query
 
-    # ======================================================
+    # ------------------------------------------------------
     # LOCATION SEARCH
-    # ======================================================
+    # ------------------------------------------------------
 
     if not lat or not lon:
 
@@ -234,14 +380,10 @@ def weather():
             parts = place['display_name'].split(',')
 
             if len(parts) > 1:
-
                 resolved_city_name = (
-                    f"{parts[0].strip()}, "
-                    f"{parts[1].strip()}"
+                    f"{parts[0].strip()}, {parts[1].strip()}"
                 )
-
             else:
-
                 resolved_city_name = parts[0].strip()
 
         else:
@@ -253,15 +395,15 @@ def weather():
                 )
             }), 400
 
-    # ======================================================
+    # ------------------------------------------------------
     # CURRENT WEATHER
-    # ======================================================
+    # ------------------------------------------------------
 
     current_url = (
-        "http://api.openweathermap.org/data/2.5/weather"
+        "https://api.openweathermap.org/data/2.5/weather"
         f"?lat={lat}"
         f"&lon={lon}"
-        f"&appid={weather_api_key}"
+        f"&appid={OPENWEATHER_API_KEY}"
         "&units=metric"
     )
 
@@ -289,46 +431,31 @@ def weather():
 
     data = current_response.json()
 
-    # ======================================================
-    # CURRENT WEATHER VALUES
-    # ======================================================
-
     temp = data['main']['temp']
-
     feels_like = data['main']['feels_like']
-
     description = data['weather'][0]['description']
-
     humidity = data['main']['humidity']
-
     wind_speed = data['wind']['speed']
-
     pressure = data['main']['pressure']
 
-    # ======================================================
+    # ------------------------------------------------------
     # WIND DIRECTION
-    # ======================================================
+    # ------------------------------------------------------
 
     wind_deg = data['wind'].get('deg', 0)
 
     dirs = [
-        'N',
-        'NE',
-        'E',
-        'SE',
-        'S',
-        'SW',
-        'W',
-        'NW'
+        'N', 'NE', 'E', 'SE',
+        'S', 'SW', 'W', 'NW'
     ]
 
     wind_dir = dirs[
         int((wind_deg / 42.5) + 0.5) % 8
     ]
 
-    # ======================================================
+    # ------------------------------------------------------
     # SUNRISE / SUNSET
-    # ======================================================
+    # ------------------------------------------------------
 
     timezone_shift = data.get('timezone', 0)
 
@@ -342,17 +469,17 @@ def weather():
         datetime.timezone.utc
     ).strftime('%I:%M %p')
 
-    # ======================================================
+    # ------------------------------------------------------
     # AIR QUALITY
-    # ======================================================
+    # ------------------------------------------------------
 
     aqi_text = "Good"
 
     air_url = (
-        "http://api.openweathermap.org/data/2.5/air_pollution"
+        "https://api.openweathermap.org/data/2.5/air_pollution"
         f"?lat={lat}"
         f"&lon={lon}"
-        f"&appid={weather_api_key}"
+        f"&appid={OPENWEATHER_API_KEY}"
     )
 
     try:
@@ -371,9 +498,7 @@ def weather():
                 and len(air_data['list']) > 0
             ):
 
-                aqi_number = air_data[
-                    'list'
-                ][0]['main']['aqi']
+                aqi_number = air_data['list'][0]['main']['aqi']
 
                 aqi_map = {
                     1: "Good",
@@ -392,15 +517,15 @@ def weather():
 
         aqi_text = "Unavailable"
 
-    # ======================================================
+    # ------------------------------------------------------
     # FORECAST
-    # ======================================================
+    # ------------------------------------------------------
 
     forecast_url = (
-        "http://api.openweathermap.org/data/2.5/forecast"
+        "https://api.openweathermap.org/data/2.5/forecast"
         f"?lat={lat}"
         f"&lon={lon}"
-        f"&appid={weather_api_key}"
+        f"&appid={OPENWEATHER_API_KEY}"
         "&units=metric"
     )
 
@@ -416,14 +541,12 @@ def weather():
         forecast_response = None
 
     daily_forecasts = []
-
     hourly_rain_timeline = []
-
     chance_of_rain = 0
 
-    # ======================================================
+    # ------------------------------------------------------
     # CHATBOT WEATHER CONTEXT
-    # ======================================================
+    # ------------------------------------------------------
 
     chatbot_context = (
         f"Current Weather in {resolved_city_name}: "
@@ -437,10 +560,6 @@ def weather():
         f"Hourly/Upcoming forecast timeline:"
     )
 
-    # ======================================================
-    # PROCESS FORECAST
-    # ======================================================
-
     if (
         forecast_response
         and forecast_response.status_code == 200
@@ -453,7 +572,7 @@ def weather():
             []
         )
 
-        if len(forecast_list) > 0:
+        if forecast_list:
 
             chance_of_rain = int(
                 forecast_list[0].get(
@@ -462,9 +581,7 @@ def weather():
                 ) * 100
             )
 
-        for i, item in enumerate(
-            forecast_list
-        ):
+        for i, item in enumerate(forecast_list):
 
             dt_txt = item['dt_txt']
 
@@ -472,15 +589,10 @@ def weather():
                 item['main']['temp']
             )
 
-            desc = item[
-                'weather'
-            ][0]['main']
+            desc = item['weather'][0]['main']
 
             pop = int(
-                item.get(
-                    'pop',
-                    0
-                ) * 100
+                item.get('pop', 0) * 100
             )
 
             chatbot_context += (
@@ -490,10 +602,7 @@ def weather():
                 f"Rain Probability: {pop}%]"
             )
 
-            # ==================================================
-            # HOURLY RAIN TIMELINE
-            # ==================================================
-
+            # Hourly timeline
             if i < 8:
 
                 time_obj = datetime.datetime.strptime(
@@ -502,17 +611,12 @@ def weather():
                 )
 
                 hourly_rain_timeline.append({
-                    "time": time_obj.strftime(
-                        '%I %p'
-                    ),
+                    "time": time_obj.strftime('%I %p'),
                     "pop": pop,
                     "desc": desc
                 })
 
-            # ==================================================
-            # DAILY FORECAST
-            # ==================================================
-
+            # Daily forecast
             if '12:00:00' in dt_txt:
 
                 date_obj = datetime.datetime.strptime(
@@ -522,13 +626,9 @@ def weather():
 
                 daily_forecasts.append({
 
-                    "date": date_obj.strftime(
-                        '%d %b'
-                    ),
+                    "date": date_obj.strftime('%d %b'),
 
-                    "day": date_obj.strftime(
-                        '%a'
-                    ),
+                    "day": date_obj.strftime('%a'),
 
                     "temp": t,
 
@@ -540,172 +640,31 @@ def weather():
                 })
 
     # ======================================================
-    # AI WEATHER INSIGHTS
+    # IMPORTANT:
+    # NO GEMINI CALL HERE.
+    #
+    # This means opening/reloading the weather dashboard
+    # does NOT consume a Gemini API request.
     # ======================================================
 
-    insight_prompt = f"""
-You are an expert AI meteorologist.
-
-The current weather in {resolved_city_name} is:
-
-Temperature: {temp}°C
-Feels Like: {feels_like}°C
-Condition: {description}
-Humidity: {humidity}%
-Wind: {round(wind_speed * 3.6)} km/h
-Wind Direction: {wind_dir}
-Pressure: {pressure} hPa
-Air Quality: {aqi_text}
-Chance of Rain: {chance_of_rain}%
-
-Respond EXACTLY in this format:
-
-INSIGHT: [Write a 2-sentence insight predicting conditions for the evening]
-
-TRAVEL: [Write 1 sentence of practical travel and packing advice for someone visiting today]
-
-CYCLING: [Score out of 10, e.g. 9/10]
-
-RUNNING: [Score out of 10, e.g. 7/10]
-
-HIKING: [Score out of 10, e.g. 5/10]
-
-PHOTOGRAPHY: [Score out of 10, e.g. 8/10]
-
-MOTORCYCLING: [Score out of 10, e.g. 8/10]
-"""
-
-    # ======================================================
-    # DEFAULT VALUES
-    # ======================================================
-
-    insight_text = (
-        f"Conditions in {resolved_city_name} "
-        f"are currently {description}."
+    (
+        insight_text,
+        travel_text,
+        activities
+    ) = create_weather_insights(
+        resolved_city_name,
+        temp,
+        feels_like,
+        description,
+        humidity,
+        wind_speed,
+        aqi_text,
+        chance_of_rain
     )
 
-    travel_text = (
-        "Standard weather conditions apply for travel."
-    )
-
-    activities = {
-
-        "cycling": "--/10",
-
-        "running": "--/10",
-
-        "hiking": "--/10",
-
-        "photography": "--/10",
-
-        "motorcycling": "--/10"
-    }
-
-    # ======================================================
-    # GENERATE WEATHER AI INSIGHTS
-    # ======================================================
-
-    try:
-
-        response_text = generate_ai_text(
-            insight_prompt
-        )
-
-        for line in response_text.split('\n'):
-
-            line = line.strip().replace(
-                '**',
-                ''
-            )
-
-            if line.startswith(
-                'INSIGHT:'
-            ):
-
-                insight_text = (
-                    line.replace(
-                        'INSIGHT:',
-                        ''
-                    ).strip()
-                )
-
-            elif line.startswith(
-                'TRAVEL:'
-            ):
-
-                travel_text = (
-                    line.replace(
-                        'TRAVEL:',
-                        ''
-                    ).strip()
-                )
-
-            elif line.startswith(
-                'CYCLING:'
-            ):
-
-                activities[
-                    'cycling'
-                ] = line.replace(
-                    'CYCLING:',
-                    ''
-                ).strip()
-
-            elif line.startswith(
-                'RUNNING:'
-            ):
-
-                activities[
-                    'running'
-                ] = line.replace(
-                    'RUNNING:',
-                    ''
-                ).strip()
-
-            elif line.startswith(
-                'HIKING:'
-            ):
-
-                activities[
-                    'hiking'
-                ] = line.replace(
-                    'HIKING:',
-                    ''
-                ).strip()
-
-            elif line.startswith(
-                'PHOTOGRAPHY:'
-            ):
-
-                activities[
-                    'photography'
-                ] = line.replace(
-                    'PHOTOGRAPHY:',
-                    ''
-                ).strip()
-
-            elif line.startswith(
-                'MOTORCYCLING:'
-            ):
-
-                activities[
-                    'motorcycling'
-                ] = line.replace(
-                    'MOTORCYCLING:',
-                    ''
-                ).strip()
-
-    except Exception as e:
-
-        print(
-            f"Gemini Weather Error: "
-            f"{type(e).__name__}: {e}",
-            flush=True
-        )
-
-    # ======================================================
+    # ------------------------------------------------------
     # RETURN WEATHER DATA
-    # ======================================================
+    # ------------------------------------------------------
 
     return jsonify({
 
@@ -748,7 +707,7 @@ MOTORCYCLING: [Score out of 10, e.g. 8/10]
 
 
 # ==========================================================
-# START SERVER
+# RENDER STARTUP
 # ==========================================================
 
 if __name__ == '__main__':
