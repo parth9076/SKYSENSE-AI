@@ -1352,7 +1352,47 @@
             }
         }
 
-\n        /* SKY SENSE POLISH: restrained motion, depth, accessibility */\n        :root { --sky-ease: cubic-bezier(.22,1,.36,1); }\n        html { scroll-behavior: smooth; -webkit-tap-highlight-color: transparent; }\n        body { overscroll-behavior-x: none; }\n        .card,.forecast-card,.rain-slot,.glance-box,.stat-pill,.activity-item {\n            transition: transform .28s var(--sky-ease), border-color .28s ease, background .28s ease, box-shadow .28s ease;\n        }\n        .card:hover { border-color: rgba(96,165,250,.16); box-shadow: 0 14px 36px rgba(0,0,0,.14); }\n        .forecast-card:hover,.rain-slot:hover,.glance-box:hover,.stat-pill:hover { transform: translateY(-3px); border-color: rgba(96,165,250,.22); background: rgba(255,255,255,.045); }\n        .activity-item:hover { transform: translateX(3px); border-color: rgba(96,165,250,.18); }\n        :where(button,input,.nav-links div,.suggestion-chip):focus-visible { outline:2px solid #60a5fa; outline-offset:3px; }\n        #loading { position:fixed; inset:0; z-index:3000; display:none; align-items:center; justify-content:center; padding:24px; background:rgba(4,10,24,.58); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); color:#cbd5e1; font-size:.88rem; }\n        #loading::before { content:""; width:22px; height:22px; margin-right:12px; border:2px solid rgba(255,255,255,.16); border-top-color:#60a5fa; border-radius:50%; animation:skySpin .8s linear infinite; }\n        @keyframes skySpin { to { transform:rotate(360deg); } }\n        .view-section.active-view { animation:skyViewIn .38s var(--sky-ease) both; }\n        @keyframes skyViewIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }\n        .forecast-card,.rain-slot,.detailed-day-card,.activity-item { animation:skyItemIn .45s var(--sky-ease) both; }\n        @keyframes skyItemIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }\n        .update-time { display:flex; align-items:center; gap:7px; }\n        .update-time::before { content:""; width:6px; height:6px; flex:0 0 6px; border-radius:50%; background:#34d399; box-shadow:0 0 0 4px rgba(52,211,153,.08); animation:skyPulse 2.2s ease-in-out infinite; }\n        @keyframes skyPulse { 0%,100%{opacity:.55;transform:scale(.9)} 50%{opacity:1;transform:scale(1)} }\n        .chart-container canvas { display:block; max-width:100%; }\n        @media (max-width:480px) { .card:hover,.forecast-card:hover,.rain-slot:hover,.glance-box:hover,.stat-pill:hover,.activity-item:hover { transform:none; } #loading { font-size:.8rem; text-align:center; } }\n        @media (prefers-reduced-motion:reduce) { html{scroll-behavior:auto} *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important} }\n    </style>
+\n        /* SKY SENSE POLISH: restrained motion, depth, accessibility */\n        :root { --sky-ease: cubic-bezier(.22,1,.36,1); }\n        html { scroll-behavior: smooth; -webkit-tap-highlight-color: transparent; }\n        body { overscroll-behavior-x: none; }\n        .card,.forecast-card,.rain-slot,.glance-box,.stat-pill,.activity-item {\n            transition: transform .28s var(--sky-ease), border-color .28s ease, background .28s ease, box-shadow .28s ease;\n        }\n        .card:hover { border-color: rgba(96,165,250,.16); box-shadow: 0 14px 36px rgba(0,0,0,.14); }\n        .forecast-card:hover,.rain-slot:hover,.glance-box:hover,.stat-pill:hover { transform: translateY(-3px); border-color: rgba(96,165,250,.22); background: rgba(255,255,255,.045); }\n        .activity-item:hover { transform: translateX(3px); border-color: rgba(96,165,250,.18); }\n        :where(button,input,.nav-links div,.suggestion-chip):focus-visible { outline:2px solid #60a5fa; outline-offset:3px; }\n        #loading { position:fixed; inset:0; z-index:3000; display:none; align-items:center; justify-content:center; padding:24px; background:rgba(4,10,24,.58); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); color:#cbd5e1; font-size:.88rem; }\n        #loading::before { content:""; width:22px; height:22px; margin-right:12px; border:2px solid rgba(255,255,255,.16); border-top-color:#60a5fa; border-radius:50%; animation:skySpin .8s linear infinite; }\n        @keyframes skySpin { to { transform:rotate(360deg); } }\n        .view-section.active-view { animation:skyViewIn .38s var(--sky-ease) both; }\n        @keyframes skyViewIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }\n        .forecast-card,.rain-slot,.detailed-day-card,.activity-item { animation:skyItemIn .45s var(--sky-ease) both; }\n        @keyframes skyItemIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }\n        .update-time { display:flex; align-items:center; gap:7px; }\n        .update-time::before { content:""; width:6px; height:6px; flex:0 0 6px; border-radius:50%; background:#34d399; box-shadow:0 0 0 4px rgba(52,211,153,.08); animation:skyPulse 2.2s ease-in-out infinite; }\n        @keyframes skyPulse { 0%,100%{opacity:.55;transform:scale(.9)} 50%{opacity:1;transform:scale(1)} }\n        .chart-container canvas { display:block; max-width:100%; }\n        @media (max-width:480px) { .card:hover,.forecast-card:hover,.rain-slot:hover,.glance-box:hover,.stat-pill:hover,.activity-item:hover { transform:none; } #loading { font-size:.8rem; text-align:center; } }\n        @media (prefers-reduced-motion:reduce) { html{scroll-behavior:auto} *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important} }\n
+        /* FINAL RESPONSIVE FIX */
+        *,*::before,*::after{min-width:0;}
+        html,body{width:100%;max-width:100%;overflow-x:hidden;}
+        body{padding-left:clamp(10px,3vw,40px);padding-right:clamp(10px,3vw,40px);}
+        header,.dashboard-grid,.modern-page-head,.forecast-summary-grid,.forecast-main-card,.forecast-detail-card,.insight-hero,.insight-grid{width:100%;max-width:1300px;}
+        .location-title,.ai-text,.travel-advisor-box,.ai-reading,.travel-modern,.signal-row,.action-row{overflow-wrap:anywhere;word-break:break-word;}
+        @media(max-width:1100px){
+          body{padding-left:18px;padding-right:18px;}
+          header{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px 18px;}
+          .logo-area{grid-column:1;grid-row:1}.header-right{grid-column:2;grid-row:1;width:100%;}.nav-links{grid-column:1/-1;grid-row:2;width:100%;justify-content:center;}
+          .dashboard-grid{grid-template-columns:minmax(0,1fr);}
+          .forecast-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+          .forecast-highlight:last-child{grid-column:1/-1;}
+          .modern-forecast-list{grid-template-columns:repeat(3,minmax(0,1fr));}
+          .detailed-day-card{grid-template-columns:minmax(90px,.8fr) minmax(130px,1fr);}
+        }
+        @media(max-width:768px){
+          body{padding:10px;}
+          header{display:flex;flex-direction:column;align-items:stretch;gap:10px;}
+          .logo-area{justify-content:center;width:100%;}.header-right{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.6fr);width:100%;margin:0;}
+          .location-btn,.search-bar-wrapper{width:100%;min-width:0;}.location-btn{overflow:hidden;text-overflow:ellipsis;}
+          .nav-links{width:100%;justify-content:flex-start;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-webkit-overflow-scrolling:touch;}.nav-links::-webkit-scrollbar{display:none;}
+          .nav-links div{flex:0 0 auto;}
+          .dashboard-grid{display:grid;grid-template-columns:minmax(0,1fr);}.dashboard-grid>div{width:100%;min-width:0;}
+          .micro-stats,.glance-grid,.rain-timeline{grid-template-columns:repeat(2,minmax(0,1fr));}
+          .modern-page-head{align-items:stretch;}.forecast-summary-grid,.insight-grid{grid-template-columns:minmax(0,1fr);}.forecast-highlight:last-child{grid-column:auto;}
+          .modern-forecast-list{display:flex;width:100%;max-width:100%;overflow-x:auto;overflow-y:hidden;gap:10px;padding:2px 2px 10px;scroll-snap-type:x proximity;scrollbar-width:none;-webkit-overflow-scrolling:touch;}.modern-forecast-list::-webkit-scrollbar{display:none;}
+          .modern-forecast-card{flex:0 0 150px;min-width:150px;scroll-snap-align:start;}
+          .forecast-toolbar{align-items:flex-start;flex-direction:column;}
+          .detailed-day-card{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:13px;padding:14px;}.dd-condition{justify-self:end;}.dd-temperature,.dd-rain{grid-column:1/-1;}
+          .insight-hero{align-items:flex-start;flex-wrap:wrap;padding:17px;}.confidence-badge{margin-left:0;}.insight-wide{grid-column:auto;}
+          .chat-window{position:fixed;left:10px;right:10px;bottom:calc(76px + env(safe-area-inset-bottom));width:auto;max-width:none;height:min(70dvh,560px);max-height:calc(100dvh - 94px);}
+        }
+        @media(max-width:480px){
+          .header-right{grid-template-columns:1fr;}.location-btn{width:100%;}.card{padding:14px;}.temp-value{font-size:clamp(2.8rem,15vw,3.4rem);}
+          .modern-forecast-card{flex-basis:145px;min-width:145px;}.detailed-day-card{grid-template-columns:minmax(0,1fr);}.dd-condition{justify-self:start;}.dd-temperature,.dd-rain{grid-column:auto;}
+          .activity-score-grid{grid-template-columns:minmax(0,1fr);}.ask-insight-btn{width:100%;}.chat-window{left:8px;right:8px;bottom:calc(72px + env(safe-area-inset-bottom));height:min(68dvh,540px);}
+        }
+        @media(max-width:360px){body{padding:7px;}.card{padding:12px;}.modern-forecast-card{flex-basis:138px;min-width:138px;}}
+    </style>
 </head>
 <body>
 
@@ -1990,8 +2030,8 @@
             data.forecast.slice(0, 5).forEach((day, index) => {
                 const card = document.createElement('div');
                 card.className = 'forecast-card';
-                const rain = Number.isFinite(Number(day.pop)) ? Math.max(0, Math.min(100, Number(day.pop))) : 0;
-                card.innerHTML = `<div class="f-day">${index === 0 ? 'Today' : day.day}</div><div class="f-date">${day.date}</div><div style="font-size:1.2rem;margin:10px 0;">🌤️</div><div class="f-temps"><span class="f-high">${day.temp}°</span><span class="f-low">${day.min_temp}°</span></div><div style="margin-top:8px;color:#60a5fa;font-size:.72rem;font-weight:600;">💧 ${rain}% rain</div>`;
+                const overviewRain = Number.isFinite(Number(day.pop)) ? Math.max(0, Math.min(100, Number(day.pop))) : 0;
+                card.innerHTML = `<div class="f-day">${index === 0 ? 'Today' : day.day}</div><div class="f-date">${day.date}</div><div style="font-size:1.2rem;margin:10px 0;">🌤️</div><div class="f-temps"><span class="f-high">${day.temp}°</span><span class="f-low">${day.min_temp}°</span></div><div style="margin-top:8px;color:#60a5fa;font-size:.72rem;font-weight:600;">💧 ${overviewRain}% rain</div>`;
                 forecastRow.appendChild(card);
                 
                 const row = document.createElement('div');
