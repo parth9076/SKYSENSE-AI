@@ -2156,6 +2156,81 @@
         }
 
 </style>
+<style>
+
+/* FINAL LOCATION AUTOCOMPLETE FIX */
+.search-bar-wrapper {
+    position: relative !important;
+}
+
+#suggestionsBox {
+    display: none;
+    position: absolute !important;
+    top: calc(100% + 8px) !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+    height: auto !important;
+    max-height: 320px !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    flex-direction: column !important;
+    flex-wrap: nowrap !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    gap: 2px !important;
+    padding: 6px !important;
+    box-sizing: border-box !important;
+    z-index: 10000 !important;
+    background: rgba(13, 27, 46, 0.99) !important;
+    border: 1px solid rgba(96, 165, 250, 0.25) !important;
+    border-radius: 12px !important;
+    box-shadow: 0 18px 45px rgba(0, 0, 0, 0.45) !important;
+}
+
+#suggestionsBox .suggestion-item {
+    display: block !important;
+    position: relative !important;
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: 42px !important;
+    flex: none !important;
+    flex-grow: 0 !important;
+    flex-shrink: 0 !important;
+    flex-basis: auto !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+    padding: 11px 13px !important;
+    text-align: left !important;
+    white-space: normal !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    line-height: 1.35 !important;
+    border-radius: 8px !important;
+    cursor: pointer !important;
+    color: #f8fafc !important;
+    background: transparent !important;
+}
+
+#suggestionsBox .suggestion-item:hover {
+    background: rgba(59, 130, 246, 0.18) !important;
+}
+
+@media (max-width: 768px) {
+    #suggestionsBox {
+        max-height: 280px !important;
+    }
+
+    #suggestionsBox .suggestion-item {
+        min-height: 46px !important;
+        padding: 12px !important;
+    }
+}
+
+</style>
 </head>
 <body>
 
@@ -2519,7 +2594,7 @@
                             };
                             suggestionsBox.appendChild(div);
                         });
-                        suggestionsBox.style.display = 'flex';
+                        suggestionsBox.style.display = 'flex'; suggestionsBox.style.flexDirection = 'column';
                     } else {
                         suggestionsBox.style.display = 'none';
                     }
