@@ -798,6 +798,243 @@
             text-overflow: ellipsis;
         }
 
+
+        /* =========================================================
+           DETAILED FORECAST - MODERN WEATHER TIMELINE
+           ========================================================= */
+
+        .forecast-detail-card {
+            padding: 22px;
+            background:
+                radial-gradient(circle at 100% 0%, rgba(59,130,246,.08), transparent 35%),
+                rgba(17,24,39,.72);
+        }
+
+        .detailed-forecast-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .detailed-day-card {
+            position: relative;
+            display: grid;
+            grid-template-columns: minmax(115px, 1.05fr) minmax(120px, .8fr) minmax(170px, 1.1fr) minmax(150px, .9fr);
+            align-items: center;
+            gap: 18px;
+            padding: 16px 18px;
+            border: 1px solid rgba(255,255,255,.07);
+            border-radius: 16px;
+            background: linear-gradient(100deg, rgba(255,255,255,.045), rgba(255,255,255,.018));
+            overflow: hidden;
+            transition: transform .2s ease, border-color .2s ease, background .2s ease;
+        }
+
+        .detailed-day-card::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 10px;
+            bottom: 10px;
+            width: 3px;
+            border-radius: 0 5px 5px 0;
+            background: #3b82f6;
+            opacity: .75;
+        }
+
+        .detailed-day-card:hover {
+            transform: translateX(3px);
+            border-color: rgba(96,165,250,.28);
+            background: linear-gradient(100deg, rgba(59,130,246,.09), rgba(255,255,255,.025));
+        }
+
+        .dd-day {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .dd-day-name {
+            font-size: .98rem;
+            font-weight: 750;
+            color: #f8fafc;
+        }
+
+        .dd-date {
+            font-size: .72rem;
+            color: #64748b;
+        }
+
+        .dd-condition {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+        }
+
+        .dd-icon {
+            width: 42px;
+            height: 42px;
+            display: grid;
+            place-items: center;
+            flex: 0 0 42px;
+            border-radius: 12px;
+            background: rgba(59,130,246,.10);
+            border: 1px solid rgba(96,165,250,.12);
+            font-size: 1.45rem;
+        }
+
+        .dd-condition-text {
+            min-width: 0;
+        }
+
+        .dd-condition-title {
+            font-size: .86rem;
+            font-weight: 650;
+            text-transform: capitalize;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .dd-condition-sub {
+            margin-top: 3px;
+            color: #64748b;
+            font-size: .68rem;
+        }
+
+        .dd-temperature {
+            min-width: 0;
+        }
+
+        .dd-temp-line {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+            margin-bottom: 7px;
+        }
+
+        .dd-high {
+            font-size: 1.12rem;
+            font-weight: 750;
+        }
+
+        .dd-low {
+            color: #64748b;
+            font-size: .88rem;
+        }
+
+        .dd-temp-track {
+            height: 5px;
+            border-radius: 99px;
+            background: rgba(255,255,255,.07);
+            overflow: hidden;
+        }
+
+        .dd-temp-track span {
+            display: block;
+            height: 100%;
+            border-radius: inherit;
+            background: linear-gradient(90deg, #60a5fa, #38bdf8);
+        }
+
+        .dd-rain {
+            min-width: 0;
+        }
+
+        .dd-rain-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 7px;
+        }
+
+        .dd-rain-label {
+            color: #94a3b8;
+            font-size: .7rem;
+        }
+
+        .dd-rain-value {
+            color: #60a5fa;
+            font-size: .82rem;
+            font-weight: 750;
+        }
+
+        .dd-rain-track {
+            height: 7px;
+            border-radius: 99px;
+            background: rgba(255,255,255,.07);
+            overflow: hidden;
+        }
+
+        .dd-rain-track span {
+            display: block;
+            height: 100%;
+            border-radius: inherit;
+            background: linear-gradient(90deg, #38bdf8, #2563eb);
+            transition: width .5s ease;
+        }
+
+        .dd-rain-caption {
+            margin-top: 5px;
+            color: #64748b;
+            font-size: .65rem;
+        }
+
+        .dd-today-badge {
+            display: inline-flex;
+            align-items: center;
+            width: fit-content;
+            padding: 3px 7px;
+            border-radius: 99px;
+            margin-bottom: 3px;
+            background: rgba(59,130,246,.13);
+            color: #93c5fd;
+            border: 1px solid rgba(96,165,250,.16);
+            font-size: .58rem;
+            font-weight: 700;
+            letter-spacing: .06em;
+            text-transform: uppercase;
+        }
+
+        @media (max-width: 850px) {
+            .detailed-day-card {
+                grid-template-columns: 1fr 1fr;
+                gap: 14px;
+            }
+
+            .dd-condition {
+                justify-self: end;
+            }
+
+            .dd-temperature,
+            .dd-rain {
+                grid-column: span 1;
+            }
+        }
+
+        @media (max-width: 520px) {
+            .forecast-detail-card {
+                padding: 15px;
+            }
+
+            .detailed-day-card {
+                grid-template-columns: 1fr;
+                gap: 12px;
+                padding: 15px;
+            }
+
+            .dd-condition {
+                justify-self: start;
+            }
+
+            .dd-temperature,
+            .dd-rain {
+                grid-column: auto;
+            }
+        }
+
         .forecast-detail-card #detailedForecastList > div {
             border: 1px solid rgba(255,255,255,.055) !important;
             background: rgba(255,255,255,.025) !important;
@@ -1249,7 +1486,7 @@
 
         <div class="card forecast-detail-card">
             <div class="section-header">🔎 Detailed Forecast</div>
-            <div id="detailedForecastList"></div>
+            <div id="detailedForecastList" class="detailed-forecast-list"></div>
         </div>
     </div>
 
@@ -1755,8 +1992,62 @@
                 forecastRow.appendChild(card);
                 
                 const row = document.createElement('div');
-                row.style.cssText = "display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; background: rgba(255,255,255,0.02); padding: 15px; border-radius: 8px; margin-bottom: 10px;";
-                row.innerHTML = `<div><strong>${day.day} (${day.date})</strong></div><div style="color: #94a3b8;">${day.description}</div><div>High: <strong>${day.temp}°C</strong> | Low: ${day.min_temp}°C</div>`;
+                row.className = 'detailed-day-card';
+
+                const rain = Number.isFinite(Number(day.pop))
+                    ? Math.max(0, Math.min(100, Number(day.pop)))
+                    : 0;
+
+                const high = Number(day.temp);
+                const low = Number(day.min_temp);
+
+                const tempWidth = Number.isFinite(high) && Number.isFinite(low)
+                    ? Math.max(18, Math.min(100, ((high - low + 4) / 20) * 100))
+                    : 35;
+
+                const rainCaption =
+                    rain >= 70 ? 'High rain chance' :
+                    rain >= 40 ? 'Possible showers' :
+                    rain >= 20 ? 'Small rain chance' :
+                    'Low rain chance';
+
+                row.innerHTML = `
+                    <div class="dd-day">
+                        ${index === 0 ? '<span class="dd-today-badge">Today</span>' : ''}
+                        <div class="dd-day-name">${day.day || '--'}</div>
+                        <div class="dd-date">${day.date || '--'}</div>
+                    </div>
+
+                    <div class="dd-condition">
+                        <div class="dd-icon">${getForecastWeatherIcon(day.description)}</div>
+                        <div class="dd-condition-text">
+                            <div class="dd-condition-title">${day.description || 'Unknown'}</div>
+                            <div class="dd-condition-sub">Daily outlook</div>
+                        </div>
+                    </div>
+
+                    <div class="dd-temperature">
+                        <div class="dd-temp-line">
+                            <span class="dd-high">${Number.isFinite(high) ? high : '--'}°C</span>
+                            <span class="dd-low">${Number.isFinite(low) ? low : '--'}°C</span>
+                        </div>
+                        <div class="dd-temp-track">
+                            <span style="width:${tempWidth}%"></span>
+                        </div>
+                    </div>
+
+                    <div class="dd-rain">
+                        <div class="dd-rain-top">
+                            <span class="dd-rain-label">💧 Rain probability</span>
+                            <span class="dd-rain-value">${rain}%</span>
+                        </div>
+                        <div class="dd-rain-track">
+                            <span style="width:${rain}%"></span>
+                        </div>
+                        <div class="dd-rain-caption">${rainCaption}</div>
+                    </div>
+                `;
+
                 detailedForecastList.appendChild(row);
             });
 
