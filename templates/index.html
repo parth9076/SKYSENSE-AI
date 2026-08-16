@@ -2586,56 +2586,181 @@
 
 
 
+        // ============================================================
+        // LOCATION AUTOCOMPLETE
+        // Uses a fixed-position portal so dashboard CSS cannot interfere.
+        // ============================================================
+        let debounceTimer;
+
+        function positionLocationDropdown() {
+            if (!suggestionsBox || suggestionsBox.style.display === 'none') {
+                return;
+            }
+
+            const rect = cityInput.getBoundingClientRect();
+
+            suggestionsBox.style.position = 'fixed';
+            suggestionsBox.style.left = `${rect.left}px`;
+            suggestionsBox.style.top = `${rect.bottom + 6}px`;
+            suggestionsBox.style.width = `${rect.width}px`;
+            suggestionsBox.style.maxWidth = `${rect.width}px`;
+            suggestionsBox.style.zIndex = '2147483647';
+        }
+
+        function styleLocationDropdown() {
+            suggestionsBox.style.cssText = `
+                position: fixed;
+                display: block;
+                box-sizing: border-box;
+                overflow-x: hidden;
+                overflow-y: auto;
+                width: ${cityInput.getBoundingClientRect().width}px;
+                max-width: ${cityInput.getBoundingClientRect().width}px;
+                max-height: 300px;
+                padding: 6px;
+                margin: 0;
+                background: #0d1b2e;
+                border: 1px solid #29466d;
+                border-radius: 10px;
+                box-shadow: 0 16px 40px rgba(0,0,0,.65);
+                z-index: 2147483647;
+                opacity: 1;
+                visibility: visible;
+            `;
+
+            positionLocationDropdown();
+        }
+
+        function hideLocationDropdown() {
+            suggestionsBox.style.display = 'none';
+            suggestionsBox.innerHTML = '';
+        }
+
         cityInput.addEventListener('input', function() {
             clearTimeout(debounceTimer);
+
             const query = this.value.trim();
-            
+
             if (query.length < 2) {
-                suggestionsBox.style.display = 'none';
+                hideLocationDropdown();
                 return;
             }
 
             debounceTimer = setTimeout(async () => {
                 try {
-                    const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5`);
-                    const data = await res.json();
-                    
-                    suggestionsBox.innerHTML = '';
-                    if (data.length > 0) {
-                        data.forEach(place => {
-                            const div = document.createElement('div');
-                            div.className = 'suggestion-item';
-                            div.innerText = place.display_name;
-                            
-                            div.onclick = () => {
-                                cityInput.value = place.display_name.split(',')[0];
-                                suggestionsBox.style.display = 'none';
-                                getWeatherByCoords(place.lat, place.lon, place.display_name);
-                            };
-                            suggestionsBox.appendChild(div);
-                        });
-                        suggestionsBox.style.display = 'block';
-                    } else {
-                        suggestionsBox.style.display = 'none';
+                    const res = await fetch(
+                        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5&addressdetails=1`
+                    );
+
+                    if (!res.ok) {
+                        hideLocationDropdown();
+                        return;
                     }
+
+                    const data = await res.json();
+
+                    suggestionsBox.innerHTML = '';
+
+                    if (!data.length) {
+                        hideLocationDropdown();
+                        return;
+                    }
+
+                    // Open the dropdown before adding results.
+                    styleLocationDropdown();
+
+                    data.forEach(place => {
+                        const item = document.createElement('div');
+
+                        // Inline styles intentionally used here so no
+                        // external/fallback CSS can create a horizontal row.
+                        item.style.cssText = `
+                            display: block;
+                            position: static;
+                            width: 100%;
+                            min-width: 0;
+                            max-width: 100%;
+                            height: auto;
+                            min-height: 42px;
+                            box-sizing: border-box;
+                            margin: 0;
+                            padding: 10px 12px;
+                            clear: both;
+                            float: none;
+                            flex: none;
+                            flex-grow: 0;
+                            flex-shrink: 0;
+                            text-align: left;
+                            white-space: nowrap;
+                            overflow: hidden;
+                            text-overflow: ellipsis;
+                            color: #f8fafc;
+                            background: transparent;
+                            border: 0;
+                            border-bottom: 1px solid rgba(148,163,184,.12);
+                            border-radius: 7px;
+                            cursor: pointer;
+                            line-height: 20px;
+                            font-size: 14px;
+                        `;
+
+                        item.textContent = place.display_name;
+
+                        item.addEventListener('mouseenter', () => {
+                            item.style.background = '#17345b';
+                        });
+
+                        item.addEventListener('mouseleave', () => {
+                            item.style.background = 'transparent';
+                        });
+
+                        item.addEventListener('click', () => {
+                            cityInput.value =
+                                place.display_name.split(',')[0].trim();
+
+                            hideLocationDropdown();
+
+                            getWeatherByCoords(
+                                place.lat,
+                                place.lon,
+                                place.display_name
+                            );
+                        });
+
+                        suggestionsBox.appendChild(item);
+                    });
+
+                    positionLocationDropdown();
+
                 } catch (err) {
-                    console.error("Autocomplete error:", err);
+                    console.error(
+                        'Location autocomplete error:',
+                        err
+                    );
+                    hideLocationDropdown();
                 }
             }, 300);
         });
 
         cityInput.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
-                suggestionsBox.style.display = 'none';
+                hideLocationDropdown();
                 getWeatherByName(cityInput.value);
             }
         });
 
         document.addEventListener('click', (e) => {
-            if (!cityInput.contains(e.target) && !suggestionsBox.contains(e.target)) {
-                suggestionsBox.style.display = 'none';
+            if (
+                !cityInput.contains(e.target) &&
+                !suggestionsBox.contains(e.target)
+            ) {
+                hideLocationDropdown();
             }
         });
+
+        window.addEventListener('resize', positionLocationDropdown);
+        window.addEventListener('scroll', positionLocationDropdown, true);
+
 
         async function getWeatherByName(query) {
             if (!query) return;
