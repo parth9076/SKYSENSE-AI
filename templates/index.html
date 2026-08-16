@@ -2562,16 +2562,39 @@
 
         async function getWeatherByCoords(lat, lon, displayName) {
             showLoading();
+
             try {
-                const response = await fetch(`/api/weather?lat=${lat}&lon=${lon}&city=${encodeURIComponent(displayName)}`);
-                const data = await response.json();
-                if (data.error) {
-                    console.error(data.error);
-                } else {
-                    updateDashboard(data);
+                const response = await fetch(
+                    `/api/weather?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}&city=${encodeURIComponent(displayName || 'Precise Coordinates')}`
+                );
+
+                const raw = await response.text();
+
+                let data = {};
+                try {
+                    data = raw ? JSON.parse(raw) : {};
+                } catch (_) {
+                    data = {};
                 }
+
+                if (!response.ok || data.error) {
+                    throw new Error(
+                        data.error ||
+                        `Weather server returned HTTP ${response.status}.`
+                    );
+                }
+
+                updateDashboard(data);
+
             } catch (error) {
-                alert('Connection error.');
+                console.error('SkySense weather error:', error);
+
+                const message = error?.message || 'Unknown error';
+
+                alert(
+                    `SkySense could not load weather.\n\n${message}`
+                );
+
             } finally {
                 hideLoading();
             }
