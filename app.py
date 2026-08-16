@@ -342,6 +342,305 @@ def create_weather_insights(
 # WEATHER API
 # ==========================================================
 
+
+# ==========================================================
+# FORECAST INTELLIGENCE / ENSEMBLE GUIDANCE
+# ==========================================================
+#
+# Uses Open-Meteo's ECMWF IFS ensemble guidance. An ensemble
+# runs many slightly different forecasts to estimate uncertainty.
+# This endpoint is separate from the normal weather endpoint,
+# so it does not use Groq/Gemini quota.
+#
+# Open-Meteo documents ECMWF IFS 0.25° ensemble data with
+# 51 members and hourly temperature/precipitation fields.
+# ==========================================================
+
+@app.route('/api/forecast-intelligence', methods=['GET'])
+def forecast_intelligence():
+
+    lat = request.args.get('lat')
+    lon = request.args.get('lon')
+
+    if not lat or not lon:
+        return jsonify({
+            "error": "Latitude and longitude are required."
+        }), 400
+
+    try:
+        latitude = float(lat)
+        longitude = float(lon)
+    except ValueError:
+        return jsonify({
+            "error": "Invalid coordinates."
+        }), 400
+
+    url = "https://ensemble-api.open-meteo.com/v1/ensemble"
+
+    params = {
+        "latitude": latitude,
+        "longitude": longitude,
+        "models": "ecmwf_ifs025",
+        "hourly": "temperature_2m,precipitation,wind_speed_10m",
+        "forecast_days": 3,
+        "timezone": "auto",
+        "temperature_unit": "celsius",
+        "wind_speed_unit": "kmh",
+        "precipitation_unit": "mm"
+    }
+
+    try:
+        response = requests.get(
+            url,
+            params=params,
+            timeout=20
+        )
+        response.raise_for_status()
+        payload = response.json()
+
+    except requests.RequestException as e:
+        print(
+            f"Ensemble API error: {type(e).__name__}: {e}",
+            flush=True
+        )
+        return jsonify({
+            "error": "Forecast intelligence is temporarily unavailable."
+        }), 502
+
+    hourly = payload.get("hourly", {})
+    times = hourly.get("time", [])
+
+    # Open-Meteo returns member columns such as:
+    # temperature_2m_member01, temperature_2m_member02, ...
+    temp_members = sorted(
+        key for key in hourly
+        if key.startswith("temperature_2m_member")
+    )
+
+    precip_members = sorted(
+        key for key in hourly
+        if key.startswith("precipitation_member")
+    )
+
+    wind_members = sorted(
+        key for key in hourly
+        if key.startswith("wind_speed_10m_member")
+    )
+
+    if not times or not temp_members:
+        return jsonify({
+            "error": "No ensemble forecast members were returned."
+        }), 502
+
+    # Use the next 24 forecast hours.
+    horizon = min(24, len(times))
+
+    def finite_numbers(values):
+        result = []
+        for value in values:
+            try:
+                number = float(value)
+                if number == number and abs(number) != float("inf"):
+                    result.append(number)
+            except (TypeError, ValueError):
+                pass
+        return result
+
+    def stats_at_hour(member_keys, hour_index):
+        values = finite_numbers(
+            [hourly[key][hour_index] for key in member_keys]
+        )
+
+        if not values:
+            return None
+
+        mean = sum(values) / len(values)
+
+        variance = sum(
+            (value - mean) ** 2
+            for value in values
+        ) / len(values)
+
+        spread = variance ** 0.5
+
+        ordered = sorted(values)
+        low_index = max(
+            0,
+            min(
+                len(ordered) - 1,
+                int(round(0.10 * (len(ordered) - 1)))
+            )
+        )
+        high_index = max(
+            0,
+            min(
+                len(ordered) - 1,
+                int(round(0.90 * (len(ordered) - 1)))
+            )
+        )
+
+        return {
+            "mean": mean,
+            "spread": spread,
+            "p10": ordered[low_index],
+            "p90": ordered[high_index],
+            "members": len(values)
+        }
+
+    temperature_stats = []
+    wind_stats = []
+    rain_probabilities = []
+
+    for hour in range(horizon):
+
+        temp_stat = stats_at_hour(
+            temp_members,
+            hour
+        )
+
+        if temp_stat:
+            temperature_stats.append({
+                "time": times[hour],
+                **temp_stat
+            })
+
+        if wind_members:
+            wind_stat = stats_at_hour(
+                wind_members,
+                hour
+            )
+            if wind_stat:
+                wind_stats.append({
+                    "time": times[hour],
+                    **wind_stat
+                })
+
+        if precip_members:
+
+            rain_values = finite_numbers([
+                hourly[key][hour]
+                for key in precip_members
+            ])
+
+            if rain_values:
+
+                # Probability that an ensemble member predicts
+                # measurable precipitation (> 0.1 mm).
+                wet_members = sum(
+                    1 for value in rain_values
+                    if value > 0.1
+                )
+
+                rain_probabilities.append({
+                    "time": times[hour],
+                    "probability": round(
+                        wet_members / len(rain_values) * 100
+                    )
+                })
+
+    if not temperature_stats:
+        return jsonify({
+            "error": "Temperature ensemble data is unavailable."
+        }), 502
+
+    spreads = [
+        item["spread"]
+        for item in temperature_stats
+    ]
+
+    mean_spread = sum(spreads) / len(spreads)
+
+    max_spread = max(spreads)
+
+    # Simple uncertainty classification.
+    # This is a communication metric, not an official
+    # meteorological confidence score.
+    if mean_spread <= 1.5:
+        confidence = "High"
+        confidence_note = "Ensemble members are closely grouped."
+    elif mean_spread <= 3.0:
+        confidence = "Moderate"
+        confidence_note = "There is some forecast spread."
+    else:
+        confidence = "Lower"
+        confidence_note = "The ensemble shows significant uncertainty."
+
+    rain_peak = max(
+        [item["probability"] for item in rain_probabilities],
+        default=0
+    )
+
+    # Best estimate for the next 24h temperature.
+    next_24_mean = (
+        sum(item["mean"] for item in temperature_stats)
+        / len(temperature_stats)
+    )
+
+    temp_low = min(
+        item["p10"]
+        for item in temperature_stats
+    )
+
+    temp_high = max(
+        item["p90"]
+        for item in temperature_stats
+    )
+
+    # Maximum ensemble wind estimate, if available.
+    max_wind_mean = (
+        max(item["mean"] for item in wind_stats)
+        if wind_stats else None
+    )
+
+    return jsonify({
+
+        "source": "ECMWF IFS ensemble via Open-Meteo",
+
+        "member_count": len(temp_members),
+
+        "confidence": confidence,
+
+        "confidence_note": confidence_note,
+
+        "mean_temperature_spread": round(
+            mean_spread,
+            2
+        ),
+
+        "max_temperature_spread": round(
+            max_spread,
+            2
+        ),
+
+        "next_24h_mean_temperature": round(
+            next_24_mean,
+            1
+        ),
+
+        "temperature_p10": round(
+            temp_low,
+            1
+        ),
+
+        "temperature_p90": round(
+            temp_high,
+            1
+        ),
+
+        "peak_ensemble_rain_probability": rain_peak,
+
+        "max_mean_wind_kmh": (
+            round(max_wind_mean, 1)
+            if max_wind_mean is not None
+            else None
+        ),
+
+        "hourly": temperature_stats[:12],
+
+        "rain_probability": rain_probabilities[:12]
+    })
+
+
 @app.route('/api/weather', methods=['GET'])
 def weather():
 
@@ -589,14 +888,13 @@ def weather():
         )
 
         if forecast_list:
-            # Peak precipitation probability across the next 24 hours.
-            next_24h = forecast_list[:8]
-            chance_of_rain = max(
-                int(round(item.get('pop', 0) * 100))
-                for item in next_24h
-            )
 
-        daily_groups = {}
+            chance_of_rain = int(
+                forecast_list[0].get(
+                    'pop',
+                    0
+                ) * 100
+            )
 
         for i, item in enumerate(forecast_list):
 
@@ -633,37 +931,31 @@ def weather():
                     "desc": desc
                 })
 
-            # Aggregate every 3-hour point into an actual daily high/low
-            # and the peak precipitation probability for that day.
-            date_key = dt_txt.split(' ')[0]
-            group = daily_groups.setdefault(
-                date_key, {"temps": [], "pops": [], "conditions": []}
-            )
-            group["temps"].append(float(item['main']['temp']))
-            group["pops"].append(pop)
-            group["conditions"].append(desc)
+            # Daily forecast
+            if '12:00:00' in dt_txt:
 
-        for date_key, group in list(daily_groups.items())[:5]:
+                date_obj = datetime.datetime.strptime(
+                    dt_txt.split(' ')[0],
+                    '%Y-%m-%d'
+                )
 
-            date_obj = datetime.datetime.strptime(
-                date_key,
-                '%Y-%m-%d'
-            )
+                daily_forecasts.append({
 
-            counts = {}
-            for condition in group["conditions"]:
-                counts[condition] = counts.get(condition, 0) + 1
+                    "date": date_obj.strftime('%d %b'),
 
-            day_condition = max(counts, key=counts.get)
+                    "day": date_obj.strftime('%a'),
 
-            daily_forecasts.append({
-                "date": date_obj.strftime('%d %b'),
-                "day": date_obj.strftime('%a'),
-                "temp": round(max(group["temps"])),
-                "min_temp": round(min(group["temps"])),
-                "description": day_condition,
-                "pop": max(group["pops"])
-            })
+                    "temp": t,
+
+                    "min_temp": round(
+                        item['main']['temp'] - 3
+                    ),
+
+                    "description": desc,
+
+                    # Probability of precipitation for this forecast point
+                    "pop": pop
+                })
 
     # ======================================================
     # IMPORTANT:
@@ -696,6 +988,10 @@ def weather():
 
         "city": resolved_city_name,
 
+        "latitude": float(lat),
+
+        "longitude": float(lon),
+
         "temperature": temp,
 
         "feels_like": feels_like,
@@ -717,7 +1013,6 @@ def weather():
         "aqi": aqi_text,
 
         "chance_of_rain": f"{chance_of_rain}%",
-        "chance_of_rain_label": "Peak chance in next 24h",
 
         "hourly_rain": hourly_rain_timeline,
 
