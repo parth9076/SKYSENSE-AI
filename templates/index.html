@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SkySense AI - Professional Weather Dashboard</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
         body { background-color: #0b1329; background-image: radial-gradient(circle at 50% 0%, #172554 0%, #0b1329 70%); color: #ffffff; min-height: 100vh; padding: 20px 40px; }
@@ -2155,355 +2155,9 @@
             }
         }
 
-
-        /* =========================================================
-           9.5/10 PRODUCT POLISH
-           ========================================================= */
-        .network-status {
-            position: fixed;
-            left: 50%;
-            top: 12px;
-            transform: translate(-50%, -140%);
-            z-index: 5000;
-            display: flex;
-            align-items: center;
-            gap: 9px;
-            max-width: min(92vw, 620px);
-            padding: 9px 12px;
-            border: 1px solid rgba(96,165,250,.18);
-            border-radius: 999px;
-            background: rgba(7,20,38,.94);
-            color: #cbd5e1;
-            box-shadow: 0 12px 34px rgba(0,0,0,.28);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            font-size: .76rem;
-            opacity: 0;
-            pointer-events: none;
-            transition: transform .28s cubic-bezier(.22,1,.36,1), opacity .28s ease;
-        }
-
-        .network-status.show {
-            transform: translate(-50%, 0);
-            opacity: 1;
-            pointer-events: auto;
-        }
-
-        .network-status.offline {
-            border-color: rgba(251,113,133,.25);
-            color: #fecdd3;
-        }
-
-        .network-status.warning {
-            border-color: rgba(251,191,36,.24);
-            color: #fde68a;
-        }
-
-        .network-status.success {
-            border-color: rgba(74,222,128,.2);
-            color: #bbf7d0;
-        }
-
-        .network-status-dot {
-            width: 7px;
-            height: 7px;
-            flex: 0 0 7px;
-            border-radius: 50%;
-            background: #4ade80;
-            box-shadow: 0 0 10px rgba(74,222,128,.5);
-        }
-
-        .network-status.offline .network-status-dot {
-            background: #fb7185;
-            box-shadow: 0 0 10px rgba(251,113,133,.45);
-        }
-
-        .network-status.warning .network-status-dot {
-            background: #fbbf24;
-            box-shadow: 0 0 10px rgba(251,191,36,.45);
-        }
-
-        .network-status button {
-            min-height: 30px;
-            padding: 4px 9px;
-            border-radius: 8px;
-            border: 1px solid rgba(255,255,255,.1);
-            background: rgba(255,255,255,.05);
-            color: #f8fafc;
-            cursor: pointer;
-            font-size: .7rem;
-        }
-
-        .network-status button:hover {
-            background: rgba(59,130,246,.15);
-        }
-
-        .data-stale-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            margin-left: 8px;
-            padding: 4px 7px;
-            border-radius: 999px;
-            border: 1px solid rgba(251,191,36,.16);
-            color: #fbbf24;
-            background: rgba(251,191,36,.06);
-            font-size: .65rem;
-            vertical-align: middle;
-        }
-
-        .empty-state {
-            display: grid;
-            place-items: center;
-            min-height: 110px;
-            padding: 20px;
-            border: 1px dashed rgba(148,163,184,.14);
-            border-radius: 14px;
-            color: #64748b;
-            text-align: center;
-            font-size: .78rem;
-        }
-
-        .empty-state strong {
-            display: block;
-            color: #cbd5e1;
-            margin-bottom: 4px;
-        }
-
-        .skeleton {
-            position: relative;
-            overflow: hidden;
-            color: transparent !important;
-            background: rgba(148,163,184,.07) !important;
-            border-radius: 8px;
-        }
-
-        .skeleton::after {
-            content: "";
-            position: absolute;
-            inset: 0;
-            transform: translateX(-100%);
-            background: linear-gradient(
-                90deg,
-                transparent,
-                rgba(255,255,255,.06),
-                transparent
-            );
-            animation: skeletonShimmer 1.25s infinite;
-        }
-
-        @keyframes skeletonShimmer {
-            to { transform: translateX(100%); }
-        }
-
-        .chart-container.chart-pending {
-            display: grid;
-            place-items: center;
-        }
-
-        .chart-container.chart-pending::before {
-            content: "Preparing temperature trend…";
-            color: #64748b;
-            font-size: .72rem;
-        }
-
-        .service-state {
-            color: #fbbf24 !important;
-        }
-
-        @media (max-width: 768px) {
-            .network-status {
-                top: max(8px, env(safe-area-inset-top));
-                max-width: calc(100vw - 20px);
-                border-radius: 14px;
-            }
-
-            .chat-widget {
-                right: max(12px, env(safe-area-inset-right));
-                bottom: max(12px, env(safe-area-inset-bottom));
-            }
-
-            .chat-window {
-                width: min(92vw, 380px);
-                height: min(72vh, 520px);
-                border-radius: 14px;
-            }
-
-            .chat-input-area {
-                padding: 10px;
-            }
-
-            .chat-input-area input {
-                min-width: 0;
-            }
-
-            .chat-input-area button {
-                padding: 0 14px;
-            }
-
-            .chart-container {
-                height: 170px;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .network-status {
-                align-items: flex-start;
-                border-radius: 12px;
-                font-size: .7rem;
-            }
-
-            .network-status button {
-                min-height: 32px;
-            }
-
-            .chat-window {
-                width: calc(100vw - 20px);
-                height: min(70vh, 500px);
-                margin-bottom: 10px;
-            }
-
-            .chat-btn {
-                width: 58px;
-                height: 58px;
-                font-size: 24px;
-            }
-
-            .search-bar-wrapper input,
-            .location-btn,
-            .chat-input-area input,
-            .chat-input-area button {
-                min-height: 46px;
-            }
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-            .skeleton::after {
-                animation: none;
-            }
-        }
-
-
-        @media (max-width: 768px) {
-            .dashboard-grid {
-                gap: 14px;
-            }
-
-            .card {
-                padding: 16px;
-                border-radius: 14px;
-            }
-
-            .main-temp-display {
-                flex-wrap: wrap;
-                gap: 8px 12px;
-            }
-
-            .temp-value {
-                font-size: clamp(3rem, 15vw, 4rem);
-            }
-
-            .micro-stats,
-            .glance-grid {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-            }
-
-            .rain-timeline {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-            }
-
-            .forecast-row {
-                display: flex;
-                gap: 10px;
-                overflow-x: auto;
-                scroll-snap-type: x mandatory;
-                padding-bottom: 5px;
-                -webkit-overflow-scrolling: touch;
-            }
-
-            .forecast-row .forecast-card {
-                flex: 0 0 145px;
-                scroll-snap-align: start;
-            }
-
-            .detailed-day-card {
-                grid-template-columns: 1fr !important;
-                gap: 12px !important;
-            }
-
-            .modern-page-head {
-                align-items: flex-start;
-                flex-direction: column;
-            }
-
-            .forecast-status,
-            .ai-status {
-                white-space: normal;
-            }
-        }
-
-        @media (orientation: landscape) and (max-height: 600px) {
-            .chat-window {
-                height: 82vh;
-            }
-
-            #loading {
-                align-items: flex-start;
-                padding-top: 18vh;
-            }
-
-            header {
-                margin-bottom: 12px;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .header-right {
-                grid-template-columns: 1fr;
-            }
-
-            .nav-links {
-                margin-left: -4px;
-                margin-right: -4px;
-            }
-
-            .nav-links div {
-                padding-left: 12px;
-                padding-right: 12px;
-            }
-
-            .micro-stats {
-                gap: 8px;
-            }
-
-            .stat-pill {
-                min-height: 68px;
-            }
-
-            .rain-timeline {
-                gap: 8px;
-            }
-
-            .chat-suggestions {
-                padding-left: 12px;
-                padding-right: 12px;
-            }
-
-            .msg {
-                max-width: 92%;
-            }
-        }
-
 </style>
 </head>
 <body>
-
-    <div id="networkStatus" class="network-status" role="status" aria-live="polite">
-        <span class="network-status-dot"></span>
-        <span id="networkStatusText">Online</span>
-        <button id="networkRetryBtn" type="button" onclick="retryLastWeather()">Retry</button>
-    </div>
-
 
     <header>
         <div class="logo-area" onclick="switchTab('dashboard')">☀️ SkySense <span>AI</span></div>
@@ -2513,7 +2167,7 @@
             <div id="nav-insights" onclick="switchTab('insights')">AI Insights</div>
         </div>
         <div class="header-right">
-            <button class="location-btn" aria-label="Use my current location" onclick="detectUserLocation()">📍 Use My Location</button>
+            <button class="location-btn" onclick="detectUserLocation()">📍 Use My Location</button>
             <div class="search-bar-wrapper">
                 <svg class="search-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                 <input type="text" id="cityInput" placeholder="Search city or PIN code..." autocomplete="off">
@@ -2774,7 +2428,7 @@
             </div>
             <div class="chat-input-area">
                 <input type="text" id="chatInput" placeholder="Ask about the weather..." onkeypress="handleChatEnter(event)">
-                <button type="button" aria-label="Send message" onclick="sendChatMessage()">Send</button>
+                <button onclick="sendChatMessage()">Send</button>
             </div>
         </div>
         <button class="chat-btn" onclick="toggleChat()">💬</button>
@@ -2784,81 +2438,11 @@
         let trendChartInstance = null;
         let globalChatContext = {}; 
 
-        let lastWeatherRequest = null;
-
-        const dashboardLoadingTargets = [
-            'locationDisplay', 'updateTime', 'tempDisplay', 'descDisplay',
-            'feelsDisplay', 'humidityDisplay', 'windDisplay', 'pressureDisplay',
-            'windDirDisplay', 'sunriseDisplay', 'sunsetDisplay', 'aqiDisplay',
-            'rainDisplay', 'aiDisplay', 'travelDisplay'
-        ];
-
-        function setDashboardLoadingState(isLoading) {
-            dashboardLoadingTargets.forEach((id) => {
-                const el = document.getElementById(id);
-                if (!el) return;
-                el.classList.toggle('skeleton', isLoading);
-            });
-        }
-
-
-        function setNetworkStatus(message, type = "success", persistent = false) {
-            const banner = document.getElementById("networkStatus");
-            const text = document.getElementById("networkStatusText");
-
-            if (!banner || !text) return;
-
-            text.textContent = message;
-            banner.classList.remove("offline", "warning", "success", "show");
-            banner.classList.add(type, "show");
-
-            if (persistent) {
-                clearTimeout(window.skyStatusTimer);
-                window.skyStatusTimer = setTimeout(() => {
-                    banner.classList.remove("show");
-                }, 4200);
-            }
-        }
-
-        function retryLastWeather() {
-            if (!lastWeatherRequest) {
-                detectUserLocation();
-                return;
-            }
-
-            if (lastWeatherRequest.type === "city") {
-                getWeatherByName(lastWeatherRequest.value);
-            } else {
-                getWeatherByCoords(
-                    lastWeatherRequest.lat,
-                    lastWeatherRequest.lon,
-                    lastWeatherRequest.name
-                );
-            }
-        }
-
-        function updateOnlineStatus() {
-            if (navigator.onLine) {
-                setNetworkStatus("Back online", "success", true);
-            } else {
-                setNetworkStatus(
-                    "You're offline. Cached weather may still be available.",
-                    "offline",
-                    false
-                );
-            }
-        }
-
-        window.addEventListener("online", updateOnlineStatus);
-        window.addEventListener("offline", updateOnlineStatus);
-
-        window.onload = function() { setDashboardLoadingState(true); detectUserLocation(); };
+        window.onload = function() { detectUserLocation(); };
 
         const cityInput = document.getElementById('cityInput');
         const suggestionsBox = document.getElementById('suggestionsBox');
         let debounceTimer;
-        let autocompleteController = null;
-        const autocompleteCache = new Map();
         const loadingMessages = [
             "Detecting your location...",
             "Fetching live weather data...",
@@ -2875,13 +2459,10 @@
 
             if (!loader) return;
 
-            setDashboardLoadingState(true);
-
             loadingMessageIndex = 0;
             if (text) text.textContent = message || loadingMessages[0];
 
             loader.style.display = 'flex';
-            loader.style.opacity = '1';
 
             clearInterval(loadingMessageTimer);
             loadingMessageTimer = setInterval(() => {
@@ -2921,20 +2502,8 @@
 
             debounceTimer = setTimeout(async () => {
                 try {
-                    if (autocompleteCache.has(query.toLowerCase())) {
-                        renderLocationSuggestions(autocompleteCache.get(query.toLowerCase()));
-                        return;
-                    }
-
-                    if (autocompleteController) autocompleteController.abort();
-                    autocompleteController = new AbortController();
-
-                    const res = await fetch(
-                        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5`,
-                        { signal: autocompleteController.signal }
-                    );
+                    const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5`);
                     const data = await res.json();
-                    autocompleteCache.set(query.toLowerCase(), data);
                     
                     suggestionsBox.innerHTML = '';
                     if (data.length > 0) {
@@ -2975,94 +2544,38 @@
 
         async function getWeatherByName(query) {
             if (!query) return;
-
-            lastWeatherRequest = {
-                type: 'city',
-                value: query
-            };
-
-            showLoading("Fetching live weather data...");
-            setNetworkStatus("Loading weather…", "warning", false);
-
-            const controller = new AbortController();
-            const timeout = setTimeout(() => controller.abort(), 18000);
-
+            showLoading();
             try {
-                const response = await fetch(
-                    `/api/weather?city=${encodeURIComponent(query)}`,
-                    {
-                        signal: controller.signal,
-                        headers: { "Accept": "application/json" }
-                    }
-                );
-
-                const raw = await response.text();
-                let data = {};
-                try {
-                    data = raw ? JSON.parse(raw) : {};
-                } catch (_) {}
-
-                if (!response.ok || data.error) {
-                    throw new Error(
-                        data.error ||
-                        `Weather server returned HTTP ${response.status}.`
-                    );
+                const response = await fetch(`/api/weather?city=${encodeURIComponent(query)}`);
+                const data = await response.json();
+                if (data.error) {
+                    console.error(data.error);
+                } else {
+                    updateDashboard(data);
                 }
-
-                updateDashboard(data);
-                setNetworkStatus(
-                    data.stale
-                        ? "Showing recently cached weather"
-                        : "Weather updated",
-                    data.stale ? "warning" : "success",
-                    true
-                );
-
             } catch (error) {
-                console.error("SkySense city weather error:", error);
-
-                const message =
-                    error.name === "AbortError"
-                        ? "Weather request timed out. Please retry."
-                        : error.message || "Unable to retrieve weather.";
-
-                setNetworkStatus(message, "offline", true);
-
+                alert('Connection error.');
             } finally {
-                clearTimeout(timeout);
                 hideLoading();
-                if (!window.currentWeatherData) setDashboardLoadingState(false);
             }
         }
 
         async function getWeatherByCoords(lat, lon, displayName) {
-            lastWeatherRequest = {
-                type: 'coords',
-                lat: lat,
-                lon: lon,
-                name: displayName || "Precise Coordinates"
-            };
-
-            showLoading("Fetching live weather data...");
-            setNetworkStatus("Loading weather…", "warning", false);
-
-            const controller = new AbortController();
-            const timeout = setTimeout(() => controller.abort(), 18000);
+            showLoading();
 
             try {
                 const response = await fetch(
-                    `/api/weather?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}&city=${encodeURIComponent(displayName || 'Precise Coordinates')}`,
-                    {
-                        signal: controller.signal,
-                        headers: { "Accept": "application/json" }
-                    }
+                    `/api/weather?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}&city=${encodeURIComponent(displayName || 'Precise Coordinates')}`
                 );
 
                 const raw = await response.text();
+
                 let data = {};
                 try {
                     data = raw ? JSON.parse(raw) : {};
-                } catch (_) {}
+                } catch (_) {
+                    data = {};
+                }
 
                 if (!response.ok || data.error) {
                     throw new Error(
@@ -3072,28 +2585,18 @@
                 }
 
                 updateDashboard(data);
-                setNetworkStatus(
-                    data.stale
-                        ? "Live service unavailable — showing cached weather"
-                        : "Weather updated",
-                    data.stale ? "warning" : "success",
-                    true
-                );
 
             } catch (error) {
-                console.error("SkySense coordinate weather error:", error);
+                console.error('SkySense weather error:', error);
 
-                const message =
-                    error.name === "AbortError"
-                        ? "Weather request timed out. Please retry."
-                        : error.message || "Unable to retrieve weather.";
+                const message = error?.message || 'Unknown error';
 
-                setNetworkStatus(message, "offline", true);
+                alert(
+                    `SkySense could not load weather.\n\n${message}`
+                );
 
             } finally {
-                clearTimeout(timeout);
                 hideLoading();
-                if (!window.currentWeatherData) setDashboardLoadingState(false);
             }
         }
 
@@ -3199,49 +2702,168 @@
         }
 
         // High-Precision Geolocation Tracking Function
+        // Never silently switch to an unrelated city when location fails.
         function detectUserLocation() {
-            if (navigator.geolocation) {
-                showLoading();
-                
-                const options = {
-                    enableHighAccuracy: true,
-                    timeout: 10000,
-                    maximumAge: 0
-                };
+            const DEFAULT_CITY = 'Ahmednagar';
 
-                navigator.geolocation.getCurrentPosition(
-                    async function(position) {
-                        const lat = position.coords.latitude;
-                        const lon = position.coords.longitude;
-                        
-                        try {
-                            const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`);
-                            const geoData = await geoRes.json();
-                            
-                            const address = geoData.address || {};
-                            const neighborhood = address.suburb || address.neighbourhood || address.residential || address.city_district;
-                            const city = address.city || address.town || address.village || address.county;
-                            
-                            let preciseLocationName = city;
-                            if (neighborhood && city) {
-                                preciseLocationName = `${neighborhood}, ${city}`;
-                            } else if (neighborhood) {
-                                preciseLocationName = neighborhood;
-                            }
+            function useLastKnownLocation() {
+                try {
+                    const saved = localStorage.getItem('skysense_last_location');
 
-                            getWeatherByCoords(lat, lon, preciseLocationName);
-                        } catch (err) {
-                            getWeatherByCoords(lat, lon, "Precise Coordinates");
+                    if (saved) {
+                        const location = JSON.parse(saved);
+
+                        if (
+                            location &&
+                            Number.isFinite(Number(location.lat)) &&
+                            Number.isFinite(Number(location.lon))
+                        ) {
+                            getWeatherByCoords(
+                                Number(location.lat),
+                                Number(location.lon),
+                                location.name || DEFAULT_CITY
+                            );
+                            return true;
                         }
-                    },
-                    function(error) {
-                        getWeatherByName('Pune');
-                    },
-                    options
-                );
-            } else { 
-                getWeatherByName('Pune'); 
+                    }
+                } catch (err) {
+                    console.warn('Could not read saved location:', err);
+                }
+
+                return false;
             }
+
+            if (!navigator.geolocation) {
+                if (!useLastKnownLocation()) {
+                    getWeatherByName(DEFAULT_CITY);
+                }
+                return;
+            }
+
+            showLoading();
+
+            const options = {
+                enableHighAccuracy: true,
+                timeout: 15000,
+                maximumAge: 300000
+            };
+
+            navigator.geolocation.getCurrentPosition(
+                async function(position) {
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+
+                    try {
+                        const geoRes = await fetch(
+                            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}&zoom=18&addressdetails=1`,
+                            {
+                                headers: {
+                                    'Accept': 'application/json'
+                                }
+                            }
+                        );
+
+                        if (!geoRes.ok) {
+                            throw new Error(
+                                `Reverse geocoding failed: HTTP ${geoRes.status}`
+                            );
+                        }
+
+                        const geoData = await geoRes.json();
+                        const address = geoData.address || {};
+
+                        const neighborhood =
+                            address.suburb ||
+                            address.neighbourhood ||
+                            address.residential ||
+                            address.city_district;
+
+                        const city =
+                            address.city ||
+                            address.town ||
+                            address.village ||
+                            address.municipality ||
+                            address.county;
+
+                        let preciseLocationName =
+                            city || DEFAULT_CITY;
+
+                        if (neighborhood && city) {
+                            preciseLocationName =
+                                `${neighborhood}, ${city}`;
+                        } else if (neighborhood) {
+                            preciseLocationName = neighborhood;
+                        }
+
+                        // Save exact coordinates so a temporary location
+                        // permission/geolocation failure does not switch
+                        // the user to Pune or another unrelated city.
+                        try {
+                            localStorage.setItem(
+                                'skysense_last_location',
+                                JSON.stringify({
+                                    lat,
+                                    lon,
+                                    name: preciseLocationName,
+                                    savedAt: Date.now()
+                                })
+                            );
+                        } catch (err) {
+                            console.warn(
+                                'Could not save location:',
+                                err
+                            );
+                        }
+
+                        getWeatherByCoords(
+                            lat,
+                            lon,
+                            preciseLocationName
+                        );
+
+                    } catch (err) {
+                        console.warn(
+                            'Reverse geocoding failed:',
+                            err
+                        );
+
+                        // GPS coordinates are still authoritative even if
+                        // reverse geocoding fails.
+                        try {
+                            localStorage.setItem(
+                                'skysense_last_location',
+                                JSON.stringify({
+                                    lat,
+                                    lon,
+                                    name: DEFAULT_CITY,
+                                    savedAt: Date.now()
+                                })
+                            );
+                        } catch (_) {}
+
+                        getWeatherByCoords(
+                            lat,
+                            lon,
+                            DEFAULT_CITY
+                        );
+                    }
+                },
+
+                function(error) {
+                    console.warn(
+                        'Browser location unavailable:',
+                        error.code,
+                        error.message
+                    );
+
+                    // IMPORTANT: no more getWeatherByName('Pune').
+                    if (!useLastKnownLocation()) {
+                        getWeatherByName(DEFAULT_CITY);
+                    }
+                },
+
+                options
+            );
         }
 
         function switchTab(tabName) {
@@ -3260,52 +2882,11 @@
             }
         }
 
-        async function ensureChartJs() {
-            if (window.Chart) return true;
-
-            return new Promise((resolve) => {
-                const script = document.createElement('script');
-                script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
-                script.async = true;
-
-                script.onload = () => resolve(true);
-                script.onerror = () => resolve(false);
-
-                document.head.appendChild(script);
-            });
-        }
-
-        async function updateTrendChart(forecastData) {
-            const container = document.querySelector('.chart-container');
-            const canvas = document.getElementById('trendChart');
-
-            if (!container || !canvas) return;
-
-            container.classList.add('chart-pending');
-
-            if (!forecastData || !forecastData.length) {
-                container.classList.remove('chart-pending');
-                canvas.style.display = 'none';
-                return;
-            }
-
-            const loaded = await ensureChartJs();
-
-            if (!loaded) {
-                container.classList.remove('chart-pending');
-                canvas.style.display = 'none';
-                return;
-            }
-
-            canvas.style.display = 'block';
-            container.classList.remove('chart-pending');
-
-            const ctx = canvas.getContext('2d');
+        function updateTrendChart(forecastData) {
+            const ctx = document.getElementById('trendChart').getContext('2d');
             if (trendChartInstance) trendChartInstance.destroy();
-
             const labels = forecastData.slice(0, 5).map(day => day.day);
             const temps = forecastData.slice(0, 5).map(day => day.temp);
-
             trendChartInstance = new Chart(ctx, {
                 type: 'line',
                 data: {
@@ -3581,7 +3162,7 @@
             } catch (error) {
                 console.warn('Forecast intelligence:', error);
 
-                badge.textContent = 'Model guidance unavailable';
+                badge.textContent = 'Guidance unavailable';
                 confidence.textContent = '--';
                 confidenceNote.textContent =
                     error?.message || 'Unable to retrieve model guidance';
@@ -3597,17 +3178,10 @@
         }
 
         function updateDashboard(data) {
-            setDashboardLoadingState(false);
             window.currentWeatherData = { ...data };
             document.getElementById('locationDisplay').innerText = `📍 ${data.city}`;
             const updateTime = document.getElementById('updateTime');
-            if (updateTime) {
-                updateTime.innerHTML =
-                    `Updated ${new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}` +
-                    (data.stale
-                        ? '<span class="data-stale-badge">Cached</span>'
-                        : '');
-            }
+            if (updateTime) updateTime.innerText = `Updated ${new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}`;
             document.getElementById('chatCityName').innerText = data.city;
             document.getElementById('tempDisplay').innerText = Math.round(data.temperature) + '°';
             document.getElementById('descDisplay').innerText = data.description;
@@ -3636,7 +3210,7 @@
 
             const rainTimelineContainer = document.getElementById('rainTimelineContainer');
             rainTimelineContainer.innerHTML = '';
-            if (data.hourly_rain && data.hourly_rain.length) {
+            if (data.hourly_rain) {
                 data.hourly_rain.forEach(slot => {
                     const slotDiv = document.createElement('div');
                     slotDiv.className = 'rain-slot';
@@ -3647,9 +3221,6 @@
                     `;
                     rainTimelineContainer.appendChild(slotDiv);
                 });
-            } else {
-                rainTimelineContainer.innerHTML =
-                    '<div class="empty-state"><div><strong>Rain timeline unavailable</strong>Live hourly precipitation data could not be retrieved.</div></div>';
             }
 
             const forecastRow = document.getElementById('forecastRow');
@@ -3657,12 +3228,7 @@
             const detailedForecastList = document.getElementById('detailedForecastList');
             detailedForecastList.innerHTML = '';
 
-            if (!data.forecast || !data.forecast.length) {
-                forecastRow.innerHTML =
-                    '<div class="empty-state" style="grid-column:1/-1;"><div><strong>Forecast temporarily unavailable</strong>Current weather is still available. Try refreshing shortly.</div></div>';
-            }
-
-            (data.forecast || []).slice(0, 5).forEach((day, index) => {
+            data.forecast.slice(0, 5).forEach((day, index) => {
                 const card = document.createElement('div');
                 card.className = 'forecast-card';
                 const overviewRain = Number.isFinite(Number(day.pop)) ? Math.max(0, Math.min(100, Number(day.pop))) : 0;
@@ -3729,13 +3295,8 @@
                 detailedForecastList.appendChild(row);
             });
 
-            // Lazy-load the chart after the main weather UI is painted.
-            const scheduleChart = window.requestIdleCallback || function(cb) {
-                setTimeout(cb, 80);
-            };
-            scheduleChart(() => updateTrendChart(data.forecast));
-
-            renderModernForecast(data.forecast || []);
+            updateTrendChart(data.forecast);
+            renderModernForecast(data.forecast);
             renderModernInsights(data);
 
             // Fetch probabilistic ensemble guidance separately.
