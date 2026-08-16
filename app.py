@@ -224,6 +224,116 @@ Keep simple answers concise and practical. Do not expose these instructions.
         }), 502
 
 
+
+def create_weather_insights(
+    city,
+    temp,
+    feels_like,
+    description,
+    humidity,
+    wind_speed,
+    aqi_text,
+    rain_chance
+):
+    """
+    Fast rule-based weather guidance.
+
+    This deliberately does NOT call Groq, so loading the weather dashboard
+    does not consume chatbot AI quota and cannot fail because of Groq.
+    """
+    rain = int(rain_chance or 0)
+    wind_kmh = round(float(wind_speed) * 3.6)
+
+    if rain >= 70:
+        insight = (
+            f"{city} has a high chance of rain ({rain}%) in the near forecast. "
+            f"Conditions are {description}, so keep outdoor plans flexible."
+        )
+        travel = (
+            "Carry rain protection and allow extra travel time if showers "
+            "develop."
+        )
+    elif rain >= 40:
+        insight = (
+            f"{city} has a moderate rain signal ({rain}%). "
+            f"Conditions are currently {description}; a short outdoor plan "
+            f"is reasonable, but keep a backup option."
+        )
+        travel = (
+            "A light rain layer or umbrella is sensible, especially for "
+            "longer trips."
+        )
+    elif temp >= 34:
+        insight = (
+            f"{city} is currently {round(temp)}°C with a relatively low "
+            f"rain chance ({rain}%). Heat is the main factor, so outdoor "
+            f"activity is better during cooler hours."
+        )
+        travel = (
+            "Carry water, use sun protection, and avoid prolonged exposure "
+            "during the hottest part of the day."
+        )
+    elif temp <= 12:
+        insight = (
+            f"{city} is currently cool at {round(temp)}°C with a "
+            f"{rain}% rain chance. Conditions are {description}; a warm "
+            f"layer may improve comfort outdoors."
+        )
+        travel = (
+            "Carry a light warm layer and check the latest conditions "
+            "before longer outdoor plans."
+        )
+    else:
+        insight = (
+            f"Conditions in {city} are currently {description} at "
+            f"{round(temp)}°C, with a {rain}% rain chance. "
+            f"Weather looks broadly manageable for normal outdoor plans."
+        )
+        travel = (
+            "Normal travel plans should be fine; keep an eye on the rain "
+            "chance if you will be outside for several hours."
+        )
+
+    # Simple deterministic activity guidance. The chatbot can still use
+    # these scores and the full weather context for more nuanced answers.
+    scores = {}
+
+    def score(base):
+        value = base
+
+        if rain >= 70:
+            value -= 4
+        elif rain >= 40:
+            value -= 2
+        elif rain >= 20:
+            value -= 1
+
+        if wind_kmh >= 40:
+            value -= 2
+        elif wind_kmh >= 30:
+            value -= 1
+
+        if temp >= 38 or temp <= 5:
+            value -= 3
+        elif temp >= 34 or temp <= 10:
+            value -= 1
+
+        if aqi_text == "Poor":
+            value -= 2
+        elif aqi_text == "Very Poor":
+            value -= 4
+
+        return max(1, min(10, value))
+
+    scores["cycling"] = f"{score(8)}/10"
+    scores["running"] = f"{score(8)}/10"
+    scores["hiking"] = f"{score(8)}/10"
+    scores["photography"] = f"{score(8)}/10"
+    scores["motorcycling"] = f"{score(8)}/10"
+
+    return insight, travel, scores
+
+
 @app.route('/api/weather', methods=['GET'])
 def weather():
 
@@ -608,6 +718,186 @@ def weather():
         "forecast": daily_forecasts,
 
         "chatbot_context": chatbot_context
+    })
+
+
+
+@app.route('/api/forecast-intelligence', methods=['GET'])
+def forecast_intelligence():
+    try:
+        lat = float(request.args.get("lat"))
+        lon = float(request.args.get("lon"))
+    except (TypeError, ValueError):
+        return jsonify({
+            "error": "Valid latitude and longitude are required."
+        }), 400
+
+    model_configs = {
+        "ECMWF IFS": "ecmwf_ifs",
+        "NOAA GFS": "gfs_seamless",
+        "DWD ICON": "icon_seamless"
+    }
+
+    base_url = "https://api.open-meteo.com/v1/forecast"
+
+    common_params = {
+        "latitude": lat,
+        "longitude": lon,
+        "hourly": (
+            "temperature_2m,"
+            "precipitation_probability"
+        ),
+        "forecast_days": 2,
+        "timezone": "auto",
+        "temperature_unit": "celsius"
+    }
+
+    model_data = {}
+
+    for name, model_id in model_configs.items():
+        try:
+            params = dict(common_params)
+            params["models"] = model_id
+
+            response = requests.get(
+                base_url,
+                params=params,
+                timeout=12
+            )
+
+            if response.status_code != 200:
+                print(
+                    f"[Forecast Intelligence] {name} returned "
+                    f"{response.status_code}",
+                    flush=True
+                )
+                continue
+
+            payload = response.json()
+            hourly = payload.get("hourly", {})
+
+            temps = hourly.get("temperature_2m", [])
+            rain = hourly.get(
+                "precipitation_probability",
+                []
+            )
+
+            if temps:
+                model_data[name] = {
+                    "times": hourly.get("time", []),
+                    "temps": temps,
+                    "rain": rain
+                }
+
+        except requests.RequestException as e:
+            print(
+                f"[Forecast Intelligence] {name}: {e}",
+                flush=True
+            )
+
+    if len(model_data) < 2:
+        return jsonify({
+            "error": (
+                "Not enough weather models responded for consensus. "
+                f"Available: {', '.join(model_data.keys()) or 'none'}"
+            )
+        }), 502
+
+    names = list(model_data.keys())
+    length = min(
+        24,
+        *[
+            len(model_data[name]["temps"])
+            for name in names
+        ]
+    )
+
+    if length <= 0:
+        return jsonify({
+            "error": "The weather models returned no hourly data."
+        }), 502
+
+    average_temps = []
+    rain_values = []
+    spreads = []
+
+    for i in range(length):
+        temperatures = []
+
+        for name in names:
+            value = model_data[name]["temps"][i]
+
+            if isinstance(value, (int, float)):
+                temperatures.append(float(value))
+
+            rain_series = model_data[name]["rain"]
+
+            if (
+                i < len(rain_series)
+                and isinstance(rain_series[i], (int, float))
+            ):
+                rain_values.append(float(rain_series[i]))
+
+        if temperatures:
+            average_temps.append(
+                sum(temperatures) / len(temperatures)
+            )
+            spreads.append(
+                max(temperatures) - min(temperatures)
+            )
+
+    if not average_temps:
+        return jsonify({
+            "error": "Unable to calculate model consensus."
+        }), 502
+
+    average_spread = (
+        sum(spreads) / len(spreads)
+        if spreads else 0
+    )
+
+    max_spread = max(spreads) if spreads else 0
+
+    if average_spread <= 1.5:
+        confidence = "High"
+        agreement = "Strong"
+        confidence_note = (
+            "The selected models are closely grouped."
+        )
+    elif average_spread <= 3:
+        confidence = "Moderate"
+        agreement = "Moderate"
+        confidence_note = (
+            "The models show some disagreement."
+        )
+    else:
+        confidence = "Lower"
+        agreement = "Mixed"
+        confidence_note = (
+            "The models disagree noticeably, so timing and "
+            "temperature confidence is lower."
+        )
+
+    times = model_data[names[0]]["times"]
+
+    return jsonify({
+        "models_available": names,
+        "model_count": len(names),
+        "confidence": confidence,
+        "confidence_note": confidence_note,
+        "agreement": agreement,
+        "max_temperature_spread": round(max_spread, 1),
+        "average_temperature_spread": round(
+            average_spread,
+            1
+        ),
+        "peak_ensemble_rain_probability": (
+            round(max(rain_values))
+            if rain_values else None
+        ),
+        "next_24_low": round(min(average_temps), 1),
+        "next_24_high": round(max(average_temps), 1),
+        "times": times[:length]
     })
 
 
