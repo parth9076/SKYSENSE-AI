@@ -26,7 +26,7 @@ if not OPENWEATHER_API_KEY:
     raise RuntimeError("OPENWEATHER_API_KEY is not configured.")
 
 client = Groq(api_key=GROQ_API_KEY) if GROQ_API_KEY else None
-GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
+GROQ_MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-20b")
 
 # ----------------------------------------------------------
 # SERVER-SIDE CACHE + RETRY POLICY
