@@ -1379,6 +1379,70 @@
         @media (max-width:480px) { .card:hover,.forecast-card:hover,.rain-slot:hover,.glance-box:hover,.stat-pill:hover,.activity-item:hover { transform:none; } #loading { font-size:.8rem; text-align:center; } }
         @media (prefers-reduced-motion:reduce) { html{scroll-behavior:auto} *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important} }
 
+
+        /* =========================================================
+           ANDROID APP / OFFLINE / LIVE DATA POLISH
+           ========================================================= */
+        #networkStatus {
+            position: fixed;
+            top: max(10px, env(safe-area-inset-top));
+            left: 50%;
+            transform: translate(-50%, -130%);
+            z-index: 5000;
+            width: min(92vw, 520px);
+            padding: 10px 14px;
+            border-radius: 999px;
+            background: rgba(15,23,42,.96);
+            border: 1px solid rgba(255,255,255,.10);
+            color: #e2e8f0;
+            font-size: .78rem;
+            font-weight: 600;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,.30);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            transition: transform .28s ease, opacity .28s ease;
+            opacity: 0;
+            pointer-events: none;
+        }
+        #networkStatus.visible { transform: translate(-50%,0); opacity: 1; }
+        #networkStatus.offline { border-color: rgba(251,113,133,.30); color: #fecdd3; }
+        #networkStatus.online { border-color: rgba(74,222,128,.30); color: #bbf7d0; }
+        .update-time.offline { color: #fbbf24 !important; }
+        .update-time.offline::before {
+            background: #fbbf24 !important;
+            box-shadow: 0 0 0 4px rgba(251,191,36,.08) !important;
+            animation: none !important;
+        }
+        .refresh-btn {
+            background: rgba(255,255,255,.05);
+            border: 1px solid rgba(255,255,255,.10);
+            color: #dbeafe;
+            border-radius: 8px;
+            padding: 8px 11px;
+            cursor: pointer;
+            min-height: 40px;
+            font-size: .78rem;
+        }
+        .refresh-btn:active { transform: scale(.97); }
+        .offline-card {
+            display: none;
+            margin: 0 auto 14px;
+            max-width: 1300px;
+            padding: 12px 14px;
+            border-radius: 12px;
+            background: rgba(120,53,15,.18);
+            border: 1px solid rgba(251,191,36,.22);
+            color: #fde68a;
+            font-size: .78rem;
+            line-height: 1.45;
+        }
+        .offline-card.visible { display: block; }
+        @media (max-width:480px) {
+            #networkStatus { width: calc(100vw - 20px); border-radius: 12px; }
+            .refresh-btn { width: 100%; }
+        }
+
         /* FINAL RESPONSIVE FIX */
         *,*::before,*::after{min-width:0;}
         html,body{width:100%;max-width:100%;overflow-x:hidden;}
@@ -2184,6 +2248,12 @@
 </head>
 <body>
 
+    <div id="networkStatus" role="status" aria-live="polite"></div>
+    <div id="offlineCard" class="offline-card">
+        <strong>📡 Offline mode</strong><br>
+        Live weather cannot be refreshed right now. Showing the last successfully loaded weather data.
+    </div>
+
     <header>
         <div class="logo-area" onclick="switchTab('dashboard')">☀️ SkySense <span>AI</span></div>
         <div class="nav-links">
@@ -2192,7 +2262,7 @@
             <div id="nav-insights" onclick="switchTab('insights')">AI Insights</div>
         </div>
         <div class="header-right">
-            <button class="location-btn" onclick="detectUserLocation()">📍 Use My Location</button>
+            <button class="location-btn" onclick="detectUserLocation(true)">📍 Use My Location</button><button class="refresh-btn" onclick="refreshWeather()">↻ Refresh</button>
             <div class="search-bar-wrapper">
                 <svg class="search-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                 <input type="text" id="cityInput" placeholder="Search city or PIN code..." autocomplete="off">
@@ -2463,7 +2533,15 @@
         let trendChartInstance = null;
         let globalChatContext = {}; 
 
-        window.onload = function() { detectUserLocation(); };
+        window.addEventListener('load', function() {
+            setupNetworkHandling();
+            if (navigator.onLine) {
+                detectUserLocation(false);
+            } else {
+                restoreLastWeatherData();
+                showOfflineStatus();
+            }
+        });
 
         const cityInput = document.getElementById('cityInput');
         const suggestionsBox = document.getElementById('suggestionsBox');
@@ -3328,6 +3406,474 @@
             // This does not consume Groq/Gemini chatbot quota.
             loadForecastIntelligence(data);
         }
-    </script>
+    
+        /* =========================================================
+           ANDROID / OFFLINE OVERRIDES
+           These functions intentionally override the original
+           network functions above without changing the rest of
+           SkySense's existing dashboard logic.
+           ========================================================= */
+
+        let lastWeatherLoadedAt = null;
+
+        function setupNetworkHandling() {
+            window.addEventListener('offline', () => {
+                showOfflineStatus();
+                hideLoading();
+            });
+
+            window.addEventListener('online', () => {
+                showOnlineStatus();
+            });
+        }
+
+        function showOfflineStatus() {
+            const status = document.getElementById('networkStatus');
+            const card = document.getElementById('offlineCard');
+            const updateTime = document.getElementById('updateTime');
+
+            if (status) {
+                status.textContent =
+                    '📡 No internet connection — showing last available data';
+                status.className = 'visible offline';
+            }
+
+            if (card) card.classList.add('visible');
+
+            if (updateTime) {
+                updateTime.classList.add('offline');
+                updateTime.textContent = lastWeatherLoadedAt
+                    ? `Offline • Last updated ${lastWeatherLoadedAt.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}`
+                    : 'Offline • No live update available';
+            }
+        }
+
+        function showOnlineStatus() {
+            const status = document.getElementById('networkStatus');
+            const card = document.getElementById('offlineCard');
+            const updateTime = document.getElementById('updateTime');
+
+            if (card) card.classList.remove('visible');
+
+            if (status) {
+                status.textContent = '✓ Internet connection restored';
+                status.className = 'visible online';
+
+                setTimeout(() => {
+                    if (navigator.onLine) status.className = '';
+                }, 2200);
+            }
+
+            if (updateTime) updateTime.classList.remove('offline');
+        }
+
+        function showConnectionError(message) {
+            console.warn('SkySense connection error:', message);
+
+            if (!navigator.onLine) {
+                showOfflineStatus();
+                return;
+            }
+
+            const status = document.getElementById('networkStatus');
+
+            if (status) {
+                status.textContent =
+                    `⚠️ ${message || 'Unable to refresh weather data'}`;
+                status.className = 'visible offline';
+
+                setTimeout(() => {
+                    if (navigator.onLine) status.className = '';
+                }, 3500);
+            }
+        }
+
+        function weatherApiUrl(path) {
+            const separator = path.includes('?') ? '&' : '?';
+            return `${path}${separator}_ts=${Date.now()}`;
+        }
+
+        function restoreLastWeatherData() {
+            try {
+                const saved = localStorage.getItem('skysense_last_weather');
+
+                if (!saved) return false;
+
+                const data = JSON.parse(saved);
+
+                if (!data || !data.payload) return false;
+
+                lastWeatherLoadedAt = data.savedAt
+                    ? new Date(data.savedAt)
+                    : new Date();
+
+                updateDashboard(data.payload, true);
+                showOfflineStatus();
+
+                return true;
+            } catch (err) {
+                console.warn('Could not restore last weather:', err);
+                return false;
+            }
+        }
+
+        function refreshWeather() {
+            if (!navigator.onLine) {
+                showOfflineStatus();
+                return;
+            }
+
+            if (
+                window.currentWeatherData?.latitude &&
+                window.currentWeatherData?.longitude
+            ) {
+                getWeatherByCoords(
+                    window.currentWeatherData.latitude,
+                    window.currentWeatherData.longitude,
+                    window.currentWeatherData.city || 'Current Location'
+                );
+            } else {
+                detectUserLocation(true);
+            }
+        }
+
+        async function getWeatherByName(query) {
+            if (!query) return;
+
+            if (!navigator.onLine) {
+                showOfflineStatus();
+                return;
+            }
+
+            showLoading("Fetching fresh weather data...");
+
+            try {
+                const response = await fetch(
+                    weatherApiUrl(
+                        `/api/weather?city=${encodeURIComponent(query)}`
+                    ),
+                    {
+                        method: 'GET',
+                        cache: 'no-store',
+                        headers: {
+                            'Cache-Control': 'no-cache'
+                        }
+                    }
+                );
+
+                const data = await response.json();
+
+                if (!response.ok || data.error) {
+                    throw new Error(
+                        data.error ||
+                        `Weather server returned HTTP ${response.status}.`
+                    );
+                }
+
+                updateDashboard(data, false);
+
+            } catch (error) {
+                console.error('SkySense weather error:', error);
+                showConnectionError(
+                    error?.message || 'Unable to retrieve live weather data.'
+                );
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function getWeatherByCoords(
+            lat,
+            lon,
+            displayName,
+            allowOfflineRestore = false
+        ) {
+            if (!navigator.onLine) {
+                if (allowOfflineRestore) {
+                    restoreLastWeatherData();
+                } else {
+                    showOfflineStatus();
+                }
+                return;
+            }
+
+            showLoading("Fetching fresh weather data...");
+
+            try {
+                const response = await fetch(
+                    weatherApiUrl(
+                        `/api/weather?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}&city=${encodeURIComponent(displayName || 'Precise Coordinates')}`
+                    ),
+                    {
+                        method: 'GET',
+                        cache: 'no-store',
+                        headers: {
+                            'Cache-Control': 'no-cache'
+                        }
+                    }
+                );
+
+                const raw = await response.text();
+
+                let data = {};
+
+                try {
+                    data = raw ? JSON.parse(raw) : {};
+                } catch (_) {
+                    data = {};
+                }
+
+                if (!response.ok || data.error) {
+                    throw new Error(
+                        data.error ||
+                        `Weather server returned HTTP ${response.status}.`
+                    );
+                }
+
+                updateDashboard(data, false);
+
+            } catch (error) {
+                console.error('SkySense weather error:', error);
+                showConnectionError(
+                    error?.message ||
+                    'Unable to retrieve live weather data.'
+                );
+            } finally {
+                hideLoading();
+            }
+        }
+
+        function detectUserLocation(forceFresh = false) {
+            const DEFAULT_CITY = 'Ahmednagar';
+
+            function useLastKnownLocation(allowWeatherRequest = true) {
+                try {
+                    const saved =
+                        localStorage.getItem('skysense_last_location');
+
+                    if (saved) {
+                        const location = JSON.parse(saved);
+
+                        if (
+                            location &&
+                            Number.isFinite(Number(location.lat)) &&
+                            Number.isFinite(Number(location.lon))
+                        ) {
+                            if (allowWeatherRequest) {
+                                getWeatherByCoords(
+                                    Number(location.lat),
+                                    Number(location.lon),
+                                    location.name || DEFAULT_CITY,
+                                    true
+                                );
+                            }
+
+                            return true;
+                        }
+                    }
+                } catch (err) {
+                    console.warn(
+                        'Could not read saved location:',
+                        err
+                    );
+                }
+
+                return false;
+            }
+
+            if (!navigator.onLine) {
+                if (!restoreLastWeatherData()) {
+                    showOfflineStatus();
+                }
+                return;
+            }
+
+            if (!navigator.geolocation) {
+                if (!useLastKnownLocation(true)) {
+                    getWeatherByName(DEFAULT_CITY);
+                }
+                return;
+            }
+
+            showLoading(
+                forceFresh
+                    ? "Getting your latest location..."
+                    : "Detecting your location..."
+            );
+
+            const options = {
+                enableHighAccuracy: true,
+                timeout: 15000,
+                maximumAge: forceFresh ? 0 : 300000
+            };
+
+            navigator.geolocation.getCurrentPosition(
+                async function(position) {
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+
+                    try {
+                        const geoRes = await fetch(
+                            weatherApiUrl(
+                                `https://nominatim.openstreetmap.org/reverse?format=json&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}&zoom=18&addressdetails=1`
+                            ),
+                            {
+                                method: 'GET',
+                                cache: 'no-store',
+                                headers: {
+                                    'Accept': 'application/json',
+                                    'Cache-Control': 'no-cache'
+                                }
+                            }
+                        );
+
+                        if (!geoRes.ok) {
+                            throw new Error(
+                                `Reverse geocoding failed: HTTP ${geoRes.status}`
+                            );
+                        }
+
+                        const geoData = await geoRes.json();
+                        const address = geoData.address || {};
+
+                        const neighborhood =
+                            address.suburb ||
+                            address.neighbourhood ||
+                            address.residential ||
+                            address.city_district;
+
+                        const city =
+                            address.city ||
+                            address.town ||
+                            address.village ||
+                            address.municipality ||
+                            address.county;
+
+                        let preciseLocationName =
+                            city || DEFAULT_CITY;
+
+                        if (neighborhood && city) {
+                            preciseLocationName =
+                                `${neighborhood}, ${city}`;
+                        } else if (neighborhood) {
+                            preciseLocationName = neighborhood;
+                        }
+
+                        try {
+                            localStorage.setItem(
+                                'skysense_last_location',
+                                JSON.stringify({
+                                    lat,
+                                    lon,
+                                    name: preciseLocationName,
+                                    savedAt: Date.now()
+                                })
+                            );
+                        } catch (err) {
+                            console.warn(
+                                'Could not save location:',
+                                err
+                            );
+                        }
+
+                        await getWeatherByCoords(
+                            lat,
+                            lon,
+                            preciseLocationName
+                        );
+
+                    } catch (err) {
+                        console.warn(
+                            'Reverse geocoding failed:',
+                            err
+                        );
+
+                        try {
+                            localStorage.setItem(
+                                'skysense_last_location',
+                                JSON.stringify({
+                                    lat,
+                                    lon,
+                                    name: DEFAULT_CITY,
+                                    savedAt: Date.now()
+                                })
+                            );
+                        } catch (_) {}
+
+                        await getWeatherByCoords(
+                            lat,
+                            lon,
+                            DEFAULT_CITY
+                        );
+                    }
+                },
+
+                function(error) {
+                    console.warn(
+                        'Browser location unavailable:',
+                        error.code,
+                        error.message
+                    );
+
+                    if (!useLastKnownLocation(true)) {
+                        getWeatherByName(DEFAULT_CITY);
+                    }
+                },
+
+                options
+            );
+        }
+
+
+
+        /* Persist the successful response without replacing the original
+           dashboard renderer. */
+        const skySenseOriginalUpdateDashboard = updateDashboard;
+
+        updateDashboard = function(data, fromOfflineRestore = false) {
+            if (!fromOfflineRestore) {
+                lastWeatherLoadedAt = new Date();
+
+                try {
+                    localStorage.setItem(
+                        'skysense_last_weather',
+                        JSON.stringify({
+                            payload: data,
+                            savedAt: Date.now()
+                        })
+                    );
+                } catch (err) {
+                    console.warn('Could not save last weather:', err);
+                }
+            }
+
+            skySenseOriginalUpdateDashboard(data);
+
+            const updateTime = document.getElementById('updateTime');
+
+            if (updateTime) {
+                updateTime.classList.toggle(
+                    'offline',
+                    fromOfflineRestore || !navigator.onLine
+                );
+
+                if (fromOfflineRestore || !navigator.onLine) {
+                    const savedTime = lastWeatherLoadedAt
+                        ? lastWeatherLoadedAt.toLocaleTimeString(
+                            [],
+                            {
+                                hour: '2-digit',
+                                minute: '2-digit'
+                            }
+                        )
+                        : '--';
+
+                    updateTime.innerText =
+                        `Offline • Last updated ${savedTime}`;
+                }
+            }
+        };
+
+</script>
 </body>
 </html>
