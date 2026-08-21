@@ -2265,8 +2265,8 @@
             <button class="location-btn" onclick="detectUserLocation(true)">📍 Use My Location</button><button class="refresh-btn" onclick="refreshWeather()">↻ Refresh</button>
             <div class="search-bar-wrapper">
                 <svg class="search-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                <input type="text" id="cityInput" placeholder="Search city or PIN code..." autocomplete="off">
-                <div id="suggestionsBox" class="suggestions-box"></div>
+                <input type="text" id="cityInput" placeholder="Search city or PIN code..." autocomplete="off" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="suggestionsBox" aria-label="Search city or PIN code">
+                <div id="suggestionsBox" class="suggestions-box" role="listbox"></div>
             </div>
         </div>
     </header>
@@ -2507,26 +2507,26 @@
 
     <!-- Chatbot Widget -->
     <div class="chat-widget">
-        <div class="chat-window" id="chatWindow">
+        <div class="chat-window" id="chatWindow" role="dialog" aria-modal="false" aria-labelledby="chatHeaderLabel">
             <div class="chat-header">
-                <span>💬 SkySense Assistant</span>
-                <span class="close-chat" onclick="toggleChat()">✖</span>
+                <span id="chatHeaderLabel">💬 SkySense Assistant</span>
+                <button type="button" class="close-chat" onclick="toggleChat()" aria-label="Close chat">✖</button>
             </div>
-            <div class="chat-messages" id="chatMessages">
+            <div class="chat-messages" id="chatMessages" role="log" aria-live="polite">
                 <div class="msg ai">Hello! I'm your AI weather assistant. Ask me anything about the forecast for <span id="chatCityName">your area</span>!</div>
             </div>
             <div class="chat-suggestions">
-                <div class="suggestion-chip" onclick="sendSuggested('What should I do today?')">✨ What should I do today?</div>
-                <div class="suggestion-chip" onclick="sendSuggested('Will it rain tonight?')">Will it rain tonight?</div>
-                <div class="suggestion-chip" onclick="sendSuggested('Can I go cycling tomorrow morning?')">Cycling tomorrow morning?</div>
-                <div class="suggestion-chip" onclick="sendSuggested('Which day is best for a trek?')">Best day for a trek?</div>
+                <button type="button" class="suggestion-chip" onclick="sendSuggested('What should I do today?')">✨ What should I do today?</button>
+                <button type="button" class="suggestion-chip" onclick="sendSuggested('Will it rain tonight?')">Will it rain tonight?</button>
+                <button type="button" class="suggestion-chip" onclick="sendSuggested('Can I go cycling tomorrow morning?')">Cycling tomorrow morning?</button>
+                <button type="button" class="suggestion-chip" onclick="sendSuggested('Which day is best for a trek?')">Best day for a trek?</button>
             </div>
             <div class="chat-input-area">
-                <input type="text" id="chatInput" placeholder="Ask about the weather..." onkeypress="handleChatEnter(event)">
-                <button onclick="sendChatMessage()">Send</button>
+                <input type="text" id="chatInput" placeholder="Ask about the weather..." onkeypress="handleChatEnter(event)" aria-label="Ask about the weather">
+                <button type="button" onclick="sendChatMessage()">Send</button>
             </div>
         </div>
-        <button class="chat-btn" onclick="toggleChat()">💬</button>
+        <button type="button" class="chat-btn" onclick="toggleChat()" aria-label="Open SkySense AI chat assistant" aria-expanded="false" aria-controls="chatWindow">💬</button>
     </div>
 
     <script>
@@ -2594,37 +2594,62 @@
 
 
 
+        let suggestionRequestId = 0;
+
+        function closeSuggestions() {
+            suggestionsBox.style.display = 'none';
+            cityInput.setAttribute('aria-expanded', 'false');
+        }
+
         cityInput.addEventListener('input', function() {
             clearTimeout(debounceTimer);
             const query = this.value.trim();
-            
+
             if (query.length < 2) {
-                suggestionsBox.style.display = 'none';
+                closeSuggestions();
                 return;
             }
+
+            const requestId = ++suggestionRequestId;
 
             debounceTimer = setTimeout(async () => {
                 try {
                     const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5`);
                     const data = await res.json();
-                    
+
+                    // Ignore this response if a newer keystroke has already
+                    // fired a more recent lookup (avoids flashing stale results).
+                    if (requestId !== suggestionRequestId) return;
+
                     suggestionsBox.innerHTML = '';
                     if (data.length > 0) {
                         data.forEach(place => {
                             const div = document.createElement('div');
                             div.className = 'suggestion-item';
+                            div.setAttribute('role', 'option');
+                            div.setAttribute('tabindex', '0');
                             div.innerText = place.display_name;
-                            
-                            div.onclick = () => {
+
+                            const choose = () => {
                                 cityInput.value = place.display_name.split(',')[0];
-                                suggestionsBox.style.display = 'none';
+                                closeSuggestions();
                                 getWeatherByCoords(place.lat, place.lon, place.display_name);
                             };
+
+                            div.onclick = choose;
+                            div.onkeydown = (e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    choose();
+                                }
+                            };
+
                             suggestionsBox.appendChild(div);
                         });
                         suggestionsBox.style.display = 'block';
+                        cityInput.setAttribute('aria-expanded', 'true');
                     } else {
-                        suggestionsBox.style.display = 'none';
+                        closeSuggestions();
                     }
                 } catch (err) {
                     console.error("Autocomplete error:", err);
@@ -2632,80 +2657,37 @@
             }, 300);
         });
 
-        cityInput.addEventListener('keypress', function(e) {
+        cityInput.addEventListener('keydown', function(e) {
             if (e.key === 'Enter') {
-                suggestionsBox.style.display = 'none';
+                closeSuggestions();
                 getWeatherByName(cityInput.value);
+            } else if (e.key === 'Escape') {
+                closeSuggestions();
             }
         });
 
         document.addEventListener('click', (e) => {
             if (!cityInput.contains(e.target) && !suggestionsBox.contains(e.target)) {
-                suggestionsBox.style.display = 'none';
+                closeSuggestions();
             }
         });
 
-        async function getWeatherByName(query) {
-            if (!query) return;
-            showLoading();
-            try {
-                const response = await fetch(`/api/weather?city=${encodeURIComponent(query)}`);
-                const data = await response.json();
-                if (data.error) {
-                    console.error(data.error);
-                } else {
-                    updateDashboard(data);
-                }
-            } catch (error) {
-                alert('Connection error.');
-            } finally {
-                hideLoading();
-            }
-        }
-
-        async function getWeatherByCoords(lat, lon, displayName) {
-            showLoading();
-
-            try {
-                const response = await fetch(
-                    `/api/weather?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}&city=${encodeURIComponent(displayName || 'Precise Coordinates')}`
-                );
-
-                const raw = await response.text();
-
-                let data = {};
-                try {
-                    data = raw ? JSON.parse(raw) : {};
-                } catch (_) {
-                    data = {};
-                }
-
-                if (!response.ok || data.error) {
-                    throw new Error(
-                        data.error ||
-                        `Weather server returned HTTP ${response.status}.`
-                    );
-                }
-
-                updateDashboard(data);
-
-            } catch (error) {
-                console.error('SkySense weather error:', error);
-
-                const message = error?.message || 'Unknown error';
-
-                alert(
-                    `SkySense could not load weather.\n\n${message}`
-                );
-
-            } finally {
-                hideLoading();
-            }
-        }
-
         function toggleChat() {
             const chatWin = document.getElementById('chatWindow');
-            chatWin.style.display = chatWin.style.display === 'flex' ? 'none' : 'flex';
+            const chatToggleBtn = document.querySelector('.chat-btn');
+            const isOpening = chatWin.style.display !== 'flex';
+
+            chatWin.style.display = isOpening ? 'flex' : 'none';
+
+            if (chatToggleBtn) {
+                chatToggleBtn.setAttribute('aria-expanded', String(isOpening));
+            }
+
+            if (isOpening) {
+                document.getElementById('chatInput')?.focus();
+            } else {
+                chatToggleBtn?.focus();
+            }
         }
 
         function handleChatEnter(e) {
@@ -2802,171 +2784,6 @@
             container.appendChild(msgDiv);
             container.scrollTop = container.scrollHeight;
             return id;
-        }
-
-        // High-Precision Geolocation Tracking Function
-        // Never silently switch to an unrelated city when location fails.
-        function detectUserLocation() {
-            const DEFAULT_CITY = 'Ahmednagar';
-
-            function useLastKnownLocation() {
-                try {
-                    const saved = localStorage.getItem('skysense_last_location');
-
-                    if (saved) {
-                        const location = JSON.parse(saved);
-
-                        if (
-                            location &&
-                            Number.isFinite(Number(location.lat)) &&
-                            Number.isFinite(Number(location.lon))
-                        ) {
-                            getWeatherByCoords(
-                                Number(location.lat),
-                                Number(location.lon),
-                                location.name || DEFAULT_CITY
-                            );
-                            return true;
-                        }
-                    }
-                } catch (err) {
-                    console.warn('Could not read saved location:', err);
-                }
-
-                return false;
-            }
-
-            if (!navigator.geolocation) {
-                if (!useLastKnownLocation()) {
-                    getWeatherByName(DEFAULT_CITY);
-                }
-                return;
-            }
-
-            showLoading();
-
-            const options = {
-                enableHighAccuracy: true,
-                timeout: 15000,
-                maximumAge: 300000
-            };
-
-            navigator.geolocation.getCurrentPosition(
-                async function(position) {
-                    const lat = position.coords.latitude;
-                    const lon = position.coords.longitude;
-
-                    try {
-                        const geoRes = await fetch(
-                            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}&zoom=18&addressdetails=1`,
-                            {
-                                headers: {
-                                    'Accept': 'application/json'
-                                }
-                            }
-                        );
-
-                        if (!geoRes.ok) {
-                            throw new Error(
-                                `Reverse geocoding failed: HTTP ${geoRes.status}`
-                            );
-                        }
-
-                        const geoData = await geoRes.json();
-                        const address = geoData.address || {};
-
-                        const neighborhood =
-                            address.suburb ||
-                            address.neighbourhood ||
-                            address.residential ||
-                            address.city_district;
-
-                        const city =
-                            address.city ||
-                            address.town ||
-                            address.village ||
-                            address.municipality ||
-                            address.county;
-
-                        let preciseLocationName =
-                            city || DEFAULT_CITY;
-
-                        if (neighborhood && city) {
-                            preciseLocationName =
-                                `${neighborhood}, ${city}`;
-                        } else if (neighborhood) {
-                            preciseLocationName = neighborhood;
-                        }
-
-                        // Save exact coordinates so a temporary location
-                        // permission/geolocation failure does not switch
-                        // the user to Pune or another unrelated city.
-                        try {
-                            localStorage.setItem(
-                                'skysense_last_location',
-                                JSON.stringify({
-                                    lat,
-                                    lon,
-                                    name: preciseLocationName,
-                                    savedAt: Date.now()
-                                })
-                            );
-                        } catch (err) {
-                            console.warn(
-                                'Could not save location:',
-                                err
-                            );
-                        }
-
-                        getWeatherByCoords(
-                            lat,
-                            lon,
-                            preciseLocationName
-                        );
-
-                    } catch (err) {
-                        console.warn(
-                            'Reverse geocoding failed:',
-                            err
-                        );
-
-                        // GPS coordinates are still authoritative even if
-                        // reverse geocoding fails.
-                        try {
-                            localStorage.setItem(
-                                'skysense_last_location',
-                                JSON.stringify({
-                                    lat,
-                                    lon,
-                                    name: DEFAULT_CITY,
-                                    savedAt: Date.now()
-                                })
-                            );
-                        } catch (_) {}
-
-                        getWeatherByCoords(
-                            lat,
-                            lon,
-                            DEFAULT_CITY
-                        );
-                    }
-                },
-
-                function(error) {
-                    console.warn(
-                        'Browser location unavailable:',
-                        error.code,
-                        error.message
-                    );
-
-                    // IMPORTANT: no more getWeatherByName('Pune').
-                    if (!useLastKnownLocation()) {
-                        getWeatherByName(DEFAULT_CITY);
-                    }
-                },
-
-                options
-            );
         }
 
         function switchTab(tabName) {
