@@ -4,7 +4,7 @@
     <meta name="theme-color" content="#071426">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SkySense AI - Professional Weather Dashboard</title>
+    <title>SkySense AI 2.0 - AI Weather Intelligence</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -2321,6 +2321,182 @@
             .weather-live-badge { display:none; }
         }
 
+
+/* ==========================================================
+   SKY SENSE 2.0 — INTELLIGENCE UI
+   ========================================================== */
+:root{
+    --ss-bg:#071426;
+    --ss-card:rgba(15,25,45,.72);
+    --ss-border:rgba(148,163,184,.13);
+    --ss-primary:#60a5fa;
+    --ss-cyan:#22d3ee;
+    --ss-green:#4ade80;
+    --ss-yellow:#facc15;
+    --ss-red:#fb7185;
+    --ss-purple:#a78bfa;
+}
+body{
+    background:
+      radial-gradient(circle at 15% -10%,rgba(37,99,235,.22),transparent 34%),
+      radial-gradient(circle at 90% 0%,rgba(14,165,233,.13),transparent 30%),
+      linear-gradient(135deg,#071426 0%,#0b1329 55%,#071426 100%);
+}
+.card,.forecast-highlight,.forecast-main-card,.forecast-detail-card{
+    box-shadow:0 18px 50px rgba(0,0,0,.18);
+}
+.card:hover{
+    border-color:rgba(96,165,250,.18);
+}
+.ss-intelligence-grid{
+    display:grid;
+    grid-template-columns:1.3fr 1fr 1fr;
+    gap:14px;
+    max-width:1300px;
+    margin:0 auto 20px;
+}
+.ss-intel-card{
+    position:relative;
+    overflow:hidden;
+    min-height:150px;
+    background:linear-gradient(145deg,rgba(30,41,59,.82),rgba(15,23,42,.64));
+    border:1px solid var(--ss-border);
+    border-radius:18px;
+    padding:20px;
+}
+.ss-intel-card::after{
+    content:"";
+    position:absolute;
+    width:170px;height:170px;
+    right:-80px;bottom:-90px;
+    border-radius:50%;
+    background:rgba(96,165,250,.12);
+    filter:blur(4px);
+}
+.ss-label{
+    color:#94a3b8;
+    font-size:.68rem;
+    text-transform:uppercase;
+    letter-spacing:.12em;
+    font-weight:700;
+}
+.skyscore-hero{
+    display:flex;
+    align-items:center;
+    gap:18px;
+    margin-top:10px;
+}
+.skyscore-ring{
+    width:82px;height:82px;
+    border-radius:50%;
+    display:grid;
+    place-items:center;
+    background:conic-gradient(var(--ss-primary) calc(var(--score,0)*1%),rgba(255,255,255,.08) 0);
+    position:relative;
+}
+.skyscore-ring::before{
+    content:"";
+    position:absolute;inset:7px;
+    border-radius:50%;
+    background:#111c31;
+}
+.skyscore-ring span{
+    position:relative;
+    font-size:1.35rem;
+    font-weight:800;
+}
+.skyscore-value{
+    font-size:1.65rem;
+    font-weight:750;
+}
+.ss-muted{color:#64748b;font-size:.78rem}
+.ss-alerts{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    margin-top:12px;
+}
+.ss-alert{
+    display:flex;gap:9px;align-items:flex-start;
+    padding:10px 12px;border-radius:11px;
+    border:1px solid rgba(255,255,255,.07);
+    background:rgba(255,255,255,.025);
+}
+.ss-alert.warning{border-color:rgba(250,204,21,.22)}
+.ss-alert.critical{border-color:rgba(251,113,133,.28)}
+.ss-alert-title{font-size:.78rem;font-weight:700}
+.ss-alert-msg{font-size:.72rem;color:#94a3b8;line-height:1.4;margin-top:2px}
+.ss-activity-grid{
+    display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px
+}
+.ss-activity{
+    padding:13px;border-radius:13px;
+    background:rgba(255,255,255,.025);
+    border:1px solid rgba(255,255,255,.06);
+}
+.ss-activity-name{font-size:.72rem;color:#94a3b8}
+.ss-activity-score{font-size:1.15rem;font-weight:750;margin-top:5px}
+.ss-meter{
+    height:4px;background:rgba(255,255,255,.08);
+    border-radius:99px;overflow:hidden;margin-top:8px
+}
+.ss-meter span{display:block;height:100%;background:linear-gradient(90deg,#22d3ee,#60a5fa,#a78bfa)}
+.ss-story-grid{
+    display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px
+}
+.ss-story{
+    padding:12px;border-radius:12px;background:rgba(255,255,255,.025);
+    border:1px solid rgba(255,255,255,.06)
+}
+.ss-story b{font-size:.76rem}
+.ss-story p{font-size:.72rem;color:#94a3b8;line-height:1.45;margin-top:5px}
+.ss-confidence{
+    display:flex;align-items:center;justify-content:space-between;gap:15px;
+    margin-top:12px
+}
+.ss-confidence-bar{
+    flex:1;height:7px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden
+}
+.ss-confidence-bar span{
+    display:block;height:100%;width:0;background:linear-gradient(90deg,#a78bfa,#60a5fa);
+    transition:width .5s ease
+}
+.ss-map-shell{
+    max-width:1300px;margin:0 auto 20px;
+    min-height:330px;border-radius:18px;
+    border:1px solid rgba(255,255,255,.08);
+    background:
+      linear-gradient(rgba(96,165,250,.06) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(96,165,250,.06) 1px,transparent 1px),
+      radial-gradient(circle at 50% 50%,rgba(34,211,238,.12),transparent 38%),
+      #0a172b;
+    background-size:42px 42px,42px 42px,100% 100%,auto;
+    display:grid;place-items:center;text-align:center;
+}
+.ss-map-placeholder{
+    padding:25px;max-width:520px
+}
+.ss-map-placeholder h3{font-size:1.15rem;margin-bottom:7px}
+.ss-map-placeholder p{color:#94a3b8;font-size:.82rem;line-height:1.55}
+.ss-nav-extra{display:inline-flex;align-items:center;gap:5px}
+.ss-toast{
+    position:fixed;left:50%;bottom:25px;transform:translate(-50%,20px);
+    background:rgba(15,23,42,.94);border:1px solid rgba(255,255,255,.1);
+    backdrop-filter:blur(16px);padding:11px 15px;border-radius:12px;
+    color:#dbeafe;font-size:.8rem;opacity:0;pointer-events:none;
+    transition:.25s;z-index:4000
+}
+.ss-toast.show{opacity:1;transform:translate(-50%,0)}
+@media(max-width:900px){
+    .ss-intelligence-grid{grid-template-columns:1fr}
+    .ss-activity-grid{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:480px){
+    .ss-story-grid{grid-template-columns:1fr}
+    .ss-activity-grid{grid-template-columns:repeat(2,1fr)}
+    .ss-intel-card{padding:15px}
+}
+
 </style>
 </head>
 <body>
@@ -2583,7 +2759,94 @@
     </div>
 
     <!-- Chatbot Widget -->
-    <div class="chat-widget">
+    
+<!-- SkySense Intelligence Engine -->
+<section id="skySenseIntelligence" class="ss-intelligence-grid" aria-label="SkySense intelligence">
+    <div class="ss-intel-card">
+        <div class="ss-label">SkyScore™</div>
+        <div class="skyscore-hero">
+            <div class="skyscore-ring" id="skyScoreRing" style="--score:0">
+                <span id="skyScoreNumber">--</span>
+            </div>
+            <div>
+                <div class="skyscore-value" id="skyScoreLabel">Loading intelligence</div>
+                <div class="ss-muted" id="skyScoreSummary">Analyzing current conditions…</div>
+            </div>
+        </div>
+    </div>
+    <div class="ss-intel-card">
+        <div class="ss-label">Forecast confidence</div>
+        <div class="ss-confidence">
+            <strong id="forecastConfidenceLabel">--</strong>
+            <div class="ss-confidence-bar"><span id="forecastConfidenceBar"></span></div>
+            <strong id="forecastConfidenceScore">--</strong>
+        </div>
+        <p class="ss-muted" id="forecastConfidenceReason" style="margin-top:12px">
+            Waiting for forecast data…
+        </p>
+    </div>
+    <div class="ss-intel-card">
+        <div class="ss-label">Weather story</div>
+        <div class="ss-story-grid" style="grid-template-columns:1fr">
+            <div class="ss-story"><b>Morning</b><p id="storyMorning">--</p></div>
+            <div class="ss-story"><b>Afternoon</b><p id="storyAfternoon">--</p></div>
+            <div class="ss-story"><b>Evening</b><p id="storyEvening">--</p></div>
+        </div>
+    </div>
+</section>
+
+<section class="card" style="max-width:1300px;margin:0 auto 20px" id="activityIntelligence">
+    <div class="section-header">🎯 Activity intelligence</div>
+    <div class="ss-activity-grid" id="activityScoreGrid">
+        <div class="ss-activity"><div class="ss-activity-name">Motorcycling</div><div class="ss-activity-score">--</div></div>
+        <div class="ss-activity"><div class="ss-activity-name">Cycling</div><div class="ss-activity-score">--</div></div>
+        <div class="ss-activity"><div class="ss-activity-name">Running</div><div class="ss-activity-score">--</div></div>
+        <div class="ss-activity"><div class="ss-activity-name">Hiking</div><div class="ss-activity-score">--</div></div>
+        <div class="ss-activity"><div class="ss-activity-name">Photography</div><div class="ss-activity-score">--</div></div>
+        <div class="ss-activity"><div class="ss-activity-name">Outdoor dining</div><div class="ss-activity-score">--</div></div>
+        <div class="ss-activity"><div class="ss-activity-name">Beach</div><div class="ss-activity-score">--</div></div>
+    </div>
+</section>
+
+<section class="card" style="max-width:1300px;margin:0 auto 20px">
+    <div class="section-header">⚠️ Weather risk monitor</div>
+    <div id="riskAlerts" class="ss-alerts">
+        <div class="ss-muted">No risk assessment yet.</div>
+    </div>
+</section>
+
+<section id="view-map" class="view-section">
+    <div class="ss-map-shell">
+        <div class="ss-map-placeholder">
+            <div style="font-size:2.2rem">🗺️</div>
+            <h3>Live Weather Map</h3>
+            <p>
+                SkySense is ready for precipitation, wind, temperature and cloud
+                layers. Connect a map/radar tile provider to enable live map tiles
+                without changing the intelligence engine.
+            </p>
+        </div>
+    </div>
+</section>
+
+<section id="view-travel" class="view-section">
+    <div class="card" style="max-width:1300px;margin:0 auto 20px">
+        <div class="modern-page-head" style="margin-bottom:0">
+            <div>
+                <div class="eyebrow">TRAVEL INTELLIGENCE</div>
+                <h1>Plan around the weather</h1>
+                <p>Use the current forecast, SkyScore and activity intelligence to choose better outdoor windows.</p>
+            </div>
+        </div>
+        <div class="ss-story-grid" style="margin-top:20px">
+            <div class="ss-story"><b>Best outdoor window</b><p id="travelBestWindow">Analyzing forecast…</p></div>
+            <div class="ss-story"><b>Rain strategy</b><p id="travelRainStrategy">Analyzing precipitation…</p></div>
+            <div class="ss-story"><b>Activity recommendation</b><p id="travelActivityRecommendation">Analyzing conditions…</p></div>
+        </div>
+    </div>
+</section>
+
+<div class="chat-widget">
         <div class="chat-window" id="chatWindow" role="dialog" aria-modal="false" aria-labelledby="chatHeaderLabel">
             <div class="chat-header">
                 <span id="chatHeaderLabel">💬 SkySense Assistant</span>
@@ -2867,16 +3130,142 @@
             document.querySelectorAll('.nav-links div').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active-view'));
 
-            if(tabName === 'dashboard') {
-                document.getElementById('nav-dashboard').classList.add('active');
-                document.getElementById('view-dashboard').classList.add('active-view');
-            } else if(tabName === 'forecast') {
-                document.getElementById('nav-forecast').classList.add('active');
-                document.getElementById('view-forecast').classList.add('active-view');
-            } else if(tabName === 'insights') {
-                document.getElementById('nav-insights').classList.add('active');
-                document.getElementById('view-insights').classList.add('active-view');
+            const nav = document.getElementById('nav-' + tabName);
+            const view = document.getElementById('view-' + tabName);
+            if (nav) nav.classList.add('active');
+            if (view) view.classList.add('active-view');
+
+            // Intelligence cards remain visible on the main dashboard only.
+            const intel = document.getElementById('skySenseIntelligence');
+            const activity = document.getElementById('activityIntelligence');
+            const risks = document.getElementById('riskAlerts')?.closest('.card');
+            const showIntel = tabName === 'dashboard';
+            [intel, activity, risks].forEach(el => {
+                if (el) el.style.display = showIntel ? '' : 'none';
+            });
+        }
+
+        
+        // ==========================================================
+        // SKY SENSE INTELLIGENCE ENGINE — FRONTEND
+        // ==========================================================
+        function showSkyToast(message) {
+            let toast = document.getElementById('skyToast');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'skyToast';
+                toast.className = 'ss-toast';
+                document.body.appendChild(toast);
             }
+            toast.textContent = message;
+            toast.classList.add('show');
+            clearTimeout(window.skyToastTimer);
+            window.skyToastTimer = setTimeout(() => toast.classList.remove('show'), 2600);
+        }
+
+        function scoreLabel(score) {
+            if (score >= 85) return 'Excellent conditions';
+            if (score >= 75) return 'Very good conditions';
+            if (score >= 60) return 'Good conditions';
+            if (score >= 45) return 'Mixed conditions';
+            return 'Challenging conditions';
+        }
+
+        function renderSkySenseIntelligence(data) {
+            const score = data.skyscore || {};
+            const confidence = data.forecast_confidence || {};
+            const story = data.weather_story || {};
+            const activities = data.activity_scores || {};
+            const alerts = data.risk_alerts || [];
+
+            const scoreNum = Number(score.score ?? 0);
+            const scoreNumber = document.getElementById('skyScoreNumber');
+            const scoreRing = document.getElementById('skyScoreRing');
+            const scoreLabelEl = document.getElementById('skyScoreLabel');
+            const scoreSummary = document.getElementById('skyScoreSummary');
+
+            if (scoreNumber) scoreNumber.textContent = scoreNum || '--';
+            if (scoreRing) scoreRing.style.setProperty('--score', scoreNum);
+            if (scoreLabelEl) scoreLabelEl.textContent = score.label || scoreLabel(scoreNum);
+            if (scoreSummary) scoreSummary.textContent = story.summary || 'Current conditions analyzed.';
+
+            const confScore = Number(confidence.score || 0);
+            const confLabel = document.getElementById('forecastConfidenceLabel');
+            const confBar = document.getElementById('forecastConfidenceBar');
+            const confScoreEl = document.getElementById('forecastConfidenceScore');
+            const confReason = document.getElementById('forecastConfidenceReason');
+            if (confLabel) confLabel.textContent = confidence.label || '--';
+            if (confBar) confBar.style.width = `${confScore}%`;
+            if (confScoreEl) confScoreEl.textContent = confScore ? `${confScore}%` : '--';
+            if (confReason) confReason.textContent = confidence.reason || 'Confidence unavailable.';
+
+            const storyMap = {
+                storyMorning: story.morning,
+                storyAfternoon: story.afternoon,
+                storyEvening: story.evening
+            };
+            Object.entries(storyMap).forEach(([id, value]) => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = value || '--';
+            });
+
+            const activityGrid = document.getElementById('activityScoreGrid');
+            if (activityGrid) {
+                const names = {
+                    motorcycling:'Motorcycling',
+                    cycling:'Cycling',
+                    running:'Running',
+                    hiking:'Hiking',
+                    photography:'Photography',
+                    outdoor_dining:'Outdoor dining',
+                    beach:'Beach'
+                };
+                activityGrid.innerHTML = Object.entries(names).map(([key, name]) => {
+                    const value = Number(activities[key] ?? 0);
+                    return `<div class="ss-activity">
+                        <div class="ss-activity-name">${name}</div>
+                        <div class="ss-activity-score">${value}/100</div>
+                        <div class="ss-meter"><span style="width:${value}%"></span></div>
+                    </div>`;
+                }).join('');
+            }
+
+            const riskBox = document.getElementById('riskAlerts');
+            if (riskBox) {
+                riskBox.innerHTML = alerts.length
+                    ? alerts.map(a => `<div class="ss-alert ${a.level || 'warning'}">
+                        <div style="font-size:1.05rem">${a.icon || '⚠️'}</div>
+                        <div><div class="ss-alert-title">${a.title || 'Weather alert'}</div>
+                        <div class="ss-alert-msg">${a.message || ''}</div></div>
+                    </div>`).join('')
+                    : '<div class="ss-alert"><div>✅</div><div><div class="ss-alert-title">No significant risks detected</div><div class="ss-alert-msg">Current conditions are within normal operating ranges.</div></div></div>';
+            }
+
+            const best = Object.entries(activities).sort((a,b) => Number(b[1])-Number(a[1]))[0];
+            const bestEl = document.getElementById('travelActivityRecommendation');
+            if (bestEl && best) bestEl.textContent = `${best[0].replace('_',' ')} currently scores ${best[1]}/100.`;
+
+            const rain = Number(String(globalChatContext?.chance_of_rain ?? 0).replace('%','')) || 0;
+            const rainEl = document.getElementById('travelRainStrategy');
+            if (rainEl) rainEl.textContent = rain >= 60
+                ? 'Keep outdoor plans flexible and carry rain protection.'
+                : rain >= 35
+                    ? 'A backup indoor option is sensible.'
+                    : 'Rain risk is relatively low for the current forecast window.';
+
+            const windowEl = document.getElementById('travelBestWindow');
+            if (windowEl) windowEl.textContent = story.afternoon || 'Check the hourly forecast for the best window.';
+        }
+
+        function refreshIntelligenceFromWeather(weatherData) {
+            if (!weatherData) return;
+            renderSkySenseIntelligence({
+                skyscore: weatherData.skyscore,
+                forecast_confidence: weatherData.forecast_confidence,
+                weather_story: weatherData.weather_story,
+                risk_alerts: weatherData.risk_alerts,
+                activity_scores: weatherData.activity_scores
+            });
         }
 
         function updateTrendChart(forecastData) {
@@ -3815,6 +4204,45 @@
             });
             observer.observe(document.body, { childList: true, subtree: true });
         })();
+
+
+        // Non-invasive API observer: automatically feeds /api/weather responses
+        // into the intelligence cards regardless of which UI action requested them.
+        const _skyOriginalFetch = window.fetch;
+        window.fetch = async function(...args) {
+            const response = await _skyOriginalFetch.apply(this, args);
+            try {
+                const url = typeof args[0] === 'string' ? args[0] : args[0]?.url || '';
+                if (url.includes('/api/weather')) {
+                    const clone = response.clone();
+                    clone.json().then(data => {
+                        if (data && !data.error) {
+                            window.globalChatContext = data;
+                            refreshIntelligenceFromWeather(data);
+                        }
+                    }).catch(() => {});
+                }
+            } catch (_) {}
+            return response;
+        };
+
+
+        // SkySense keyboard shortcuts
+        document.addEventListener('keydown', (event) => {
+            const tag = document.activeElement?.tagName;
+            const typing = tag === 'INPUT' || tag === 'TEXTAREA';
+            if (event.key === '/' && !typing) {
+                event.preventDefault();
+                document.getElementById('cityInput')?.focus();
+            }
+            if (event.key.toLowerCase() === 'r' && !typing) {
+                const refresh = document.querySelector('[onclick*="weather"], [onclick*="Weather"], #refreshBtn');
+                if (refresh) refresh.click();
+            }
+            if (event.key === 'Escape') {
+                if (typeof closeSuggestions === 'function') closeSuggestions();
+            }
+        });
 
 </script>
 </body>
