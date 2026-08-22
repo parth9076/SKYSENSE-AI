@@ -2244,6 +2244,83 @@
             }
         }
 
+
+        /* =========================================================
+           SKYSENSE V2 — PREMIUM POLISH
+           ========================================================= */
+        :root {
+            --sky-accent: #60a5fa;
+            --sky-accent-2: #818cf8;
+            --sky-panel: rgba(15, 23, 42, .72);
+            --sky-border: rgba(148, 163, 184, .14);
+        }
+
+        body::before, body::after {
+            content: ""; position: fixed; inset: auto; pointer-events: none; z-index: -1;
+            border-radius: 999px; filter: blur(70px); opacity: .20;
+        }
+        body::before { width: 340px; height: 340px; top: 7%; left: -120px; background: #2563eb; }
+        body::after { width: 300px; height: 300px; right: -100px; bottom: 8%; background: #7c3aed; }
+
+        header {
+            max-width: 1300px; margin-left: auto; margin-right: auto;
+            backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+        }
+        .logo-area { letter-spacing: -.02em; transition: transform .2s ease, opacity .2s ease; }
+        .logo-area:hover { transform: translateY(-1px); opacity: .92; }
+        .logo-area span {
+            background: linear-gradient(90deg, #60a5fa, #a78bfa);
+            -webkit-background-clip: text; background-clip: text; color: transparent;
+        }
+        .card, .forecast-highlight, .modern-forecast-card, .detailed-day-card {
+            box-shadow: 0 12px 35px rgba(0,0,0,.16);
+            transition: transform .22s ease, border-color .22s ease, box-shadow .22s ease;
+        }
+        .card:hover { transform: translateY(-2px); border-color: var(--sky-border); box-shadow: 0 18px 45px rgba(0,0,0,.22); }
+        .section-header { letter-spacing: -.01em; }
+        .stat-pill, .glance-box, .activity-item, .rain-slot {
+            transition: transform .18s ease, background .18s ease, border-color .18s ease;
+        }
+        .stat-pill:hover, .glance-box:hover, .activity-item:hover, .rain-slot:hover {
+            transform: translateY(-2px); background: rgba(96,165,250,.07); border-color: rgba(96,165,250,.22);
+        }
+        .refresh-btn {
+            background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1); color:#e2e8f0;
+            border-radius: 8px; padding: 9px 13px; cursor:pointer; min-height:42px;
+            transition: transform .2s ease, background .2s ease, border-color .2s ease;
+        }
+        .refresh-btn:hover { background: rgba(96,165,250,.12); border-color: rgba(96,165,250,.3); transform: translateY(-1px); }
+        .refresh-btn.is-refreshing { animation: skyRefresh 1s linear infinite; }
+        @keyframes skyRefresh { to { transform: rotate(360deg); } }
+
+        .weather-live-badge {
+            display:inline-flex; align-items:center; gap:7px; margin-left:8px; padding:4px 8px;
+            border-radius:999px; font-size:.65rem; font-weight:700; letter-spacing:.04em;
+            color:#86efac; background:rgba(34,197,94,.08); border:1px solid rgba(34,197,94,.18);
+            vertical-align:middle;
+        }
+        .weather-live-badge::before { content:""; width:6px; height:6px; border-radius:50%; background:#22c55e; box-shadow:0 0 10px rgba(34,197,94,.8); }
+        .temp-value { text-shadow: 0 8px 35px rgba(96,165,250,.18); }
+        .forecast-card, .rain-slot { cursor: default; }
+        .chat-btn {
+            background: linear-gradient(135deg, #3b82f6, #6366f1) !important;
+            box-shadow: 0 10px 30px rgba(59,130,246,.32) !important;
+        }
+        .chat-btn:hover { box-shadow: 0 14px 38px rgba(59,130,246,.42) !important; }
+        #networkStatus.visible { box-shadow: 0 8px 25px rgba(0,0,0,.22); backdrop-filter:blur(12px); }
+        #loading { backdrop-filter: blur(14px) !important; -webkit-backdrop-filter: blur(14px) !important; }
+
+        @media (max-width: 768px) {
+            .refresh-btn { flex: 0 0 auto; }
+            .header-right { grid-template-columns: auto auto minmax(0, 1fr); }
+        }
+        @media (max-width: 480px) {
+            .header-right { grid-template-columns: 1fr 1fr; }
+            .search-bar-wrapper { grid-column: 1 / -1; }
+            .refresh-btn, .location-btn { width:100%; }
+            .weather-live-badge { display:none; }
+        }
+
 </style>
 </head>
 <body>
@@ -2280,7 +2357,7 @@
             
             <div style="display: flex; flex-direction: column; gap: 20px;">
                 <div class="card">
-                    <div class="location-title" id="locationDisplay">📍 Detecting Location...</div>
+                    <div class="location-title" id="locationDisplay">📍 Detecting Location... <span class="weather-live-badge">LIVE</span></div>
                     <div class="update-time" id="updateTime">Updated just now</div>
                     <div class="main-temp-display">
                         <div class="temp-value" id="tempDisplay">--°</div>
@@ -3690,6 +3767,54 @@
                 }
             }
         };
+
+
+        /* =========================================================
+           SKYSENSE V2 INTERACTION ENHANCEMENTS
+           ========================================================= */
+        (function enhanceSkySenseUI() {
+            const refresh = document.querySelector('.refresh-btn');
+            const search = document.getElementById('cityInput');
+
+            if (refresh) {
+                const originalRefresh = window.refreshWeather;
+                window.refreshWeather = function() {
+                    refresh.classList.add('is-refreshing');
+                    Promise.resolve(originalRefresh && originalRefresh()).finally(() => {
+                        setTimeout(() => refresh.classList.remove('is-refreshing'), 700);
+                    });
+                };
+            }
+
+            document.addEventListener('keydown', (event) => {
+                const tag = document.activeElement?.tagName;
+                const typing = tag === 'INPUT' || tag === 'TEXTAREA';
+                if (event.key === '/' && !typing) {
+                    event.preventDefault();
+                    search?.focus();
+                }
+                if (event.key.toLowerCase() === 'r' && !typing && !event.ctrlKey && !event.metaKey) {
+                    event.preventDefault();
+                    window.refreshWeather?.();
+                }
+                if (event.key === 'Escape') {
+                    document.getElementById('suggestionsBox')?.style.setProperty('display','none');
+                }
+            });
+
+            // Add subtle reveal animation as dashboard content appears.
+            const observer = new MutationObserver(() => {
+                document.querySelectorAll('.dashboard-grid .card, .forecast-highlight, .forecast-main-card, .forecast-intelligence-card, .insight-hero, .insight-grid .card').forEach((el, i) => {
+                    if (el.dataset.revealed) return;
+                    el.dataset.revealed = '1';
+                    el.animate([
+                        { opacity: 0, transform: 'translateY(8px)' },
+                        { opacity: 1, transform: 'translateY(0)' }
+                    ], { duration: 420, delay: Math.min(i * 35, 220), easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'both' });
+                });
+            });
+            observer.observe(document.body, { childList: true, subtree: true });
+        })();
 
 </script>
 </body>
