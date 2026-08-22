@@ -74,6 +74,7 @@ MAX_RETRIES = 2
 # app ever runs multiple workers/instances.
 RATE_LIMIT_LOCK = threading.Lock()
 RATE_LIMIT_HITS = collections.defaultdict(list)
+CACHE_MAX_ITEMS = int(os.getenv("CACHE_MAX_ITEMS", "500"))
 CHAT_RATE_LIMIT = 15        # requests
 CHAT_RATE_WINDOW = 60       # seconds
 
@@ -111,11 +112,19 @@ cache_get_stale = cache_get
 
 
 def cache_set(store, key, value):
+    """Store a value and prune the oldest entries to avoid unbounded memory use."""
     with CACHE_LOCK:
         store[key] = {
             "time": time.monotonic(),
             "value": value
         }
+        if len(store) > CACHE_MAX_ITEMS:
+            oldest_keys = sorted(
+                store,
+                key=lambda cache_key: store[cache_key].get("time", 0)
+            )[: max(1, len(store) - CACHE_MAX_ITEMS)]
+            for old_key in oldest_keys:
+                store.pop(old_key, None)
 
 
 def request_with_retry(
@@ -216,6 +225,10 @@ def add_security_headers(response):
     response.headers.setdefault("X-Content-Type-Options", "nosniff")
     response.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
     response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    response.headers.setdefault("Permissions-Policy", "geolocation=(self), microphone=(), camera=()")
+    response.headers.setdefault("X-XSS-Protection", "0")
+    if request.is_secure:
+        response.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
     return response
 
 
@@ -670,13 +683,16 @@ def fetch_forecast(lat_float, lon_float):
         return forecast_list, daily_forecasts, hourly_rain_timeline, chance_of_rain, forecast_status
 
     chance_of_rain = int(forecast_list[0].get("pop", 0) * 100)
+    daily_buckets = {}
 
     for i, item in enumerate(forecast_list):
         try:
             dt_txt = item["dt_txt"]
-            t = round(item["main"]["temp"])
+            temp_value = float(item["main"]["temp"])
+            t = round(temp_value)
             desc = item["weather"][0]["main"]
             pop = int(item.get("pop", 0) * 100)
+            date_key = dt_txt.split(" ")[0]
 
             if i < 8:
                 time_obj = datetime.datetime.strptime(dt_txt, "%Y-%m-%d %H:%M:%S")
@@ -686,18 +702,26 @@ def fetch_forecast(lat_float, lon_float):
                     "desc": desc
                 })
 
-            if "12:00:00" in dt_txt:
-                date_obj = datetime.datetime.strptime(dt_txt.split(" ")[0], "%Y-%m-%d")
-                daily_forecasts.append({
-                    "date": date_obj.strftime("%d %b"),
-                    "day": date_obj.strftime("%a"),
-                    "temp": t,
-                    "min_temp": round(item["main"]["temp"] - 3),
-                    "description": desc,
-                    "pop": pop
-                })
-        except (KeyError, TypeError, ValueError):
+            bucket = daily_buckets.setdefault(date_key, {
+                "temps": [], "rain": [], "descriptions": []
+            })
+            bucket["temps"].append(temp_value)
+            bucket["rain"].append(pop)
+            bucket["descriptions"].append(desc)
+        except (KeyError, TypeError, ValueError, IndexError):
             continue
+
+    for date_key, bucket in list(daily_buckets.items())[:5]:
+        date_obj = datetime.datetime.strptime(date_key, "%Y-%m-%d")
+        description = max(set(bucket["descriptions"]), key=bucket["descriptions"].count)
+        daily_forecasts.append({
+            "date": date_obj.strftime("%d %b"),
+            "day": date_obj.strftime("%a"),
+            "temp": round(max(bucket["temps"])),
+            "min_temp": round(min(bucket["temps"])),
+            "description": description,
+            "pop": max(bucket["rain"]) if bucket["rain"] else 0
+        })
 
     return forecast_list, daily_forecasts, hourly_rain_timeline, chance_of_rain, forecast_status
 
@@ -925,10 +949,9 @@ def weather():
 @app.route('/api/forecast-intelligence', methods=['GET'])
 def forecast_intelligence():
     try:
-        lat = float(request.args.get("lat"))
-        lon = float(request.args.get("lon"))
-    except (TypeError, ValueError):
-        return jsonify({"error": "Valid latitude and longitude are required."}), 400
+        lat, lon = validate_coordinates(request.args.get("lat"), request.args.get("lon"))
+    except ApiError as e:
+        return e.response()
 
     key = weather_cache_key(lat, lon)
     cached = cache_get(INTELLIGENCE_CACHE, key, INTELLIGENCE_CACHE_TTL)
