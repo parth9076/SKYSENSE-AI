@@ -7,6 +7,8 @@ import datetime
 import time
 import threading
 import collections
+import math
+import statistics
 from groq import Groq
 from dotenv import load_dotenv
 
@@ -238,6 +240,40 @@ def handle_payload_too_large(_error):
         "error": "Request body is too large.",
         "error_type": "payload_too_large"
     }), 413
+
+
+
+@app.route('/api/intelligence', methods=['GET'])
+def intelligence():
+    """Return intelligence for a location using the same weather pipeline."""
+    city = request.args.get("city", "Pune").strip()
+    lat = request.args.get("lat")
+    lon = request.args.get("lon")
+
+    try:
+        if not lat or not lon:
+            lat, lon, _ = resolve_city_location(city)
+        lat_float, lon_float = validate_coordinates(lat, lon)
+    except ApiError as e:
+        return e.response()
+
+    cache_key = weather_cache_key(lat_float, lon_float)
+    cached = cache_get(WEATHER_CACHE, cache_key, WEATHER_STALE_TTL)
+    if not cached:
+        return jsonify({
+            "error": "Weather data is not cached yet. Load /api/weather first.",
+            "error_type": "weather_not_loaded"
+        }), 404
+
+    return jsonify({
+        "city": cached.get("city", city),
+        "skyscore": cached.get("skyscore"),
+        "forecast_confidence": cached.get("forecast_confidence"),
+        "weather_story": cached.get("weather_story"),
+        "risk_alerts": cached.get("risk_alerts", []),
+        "activity_scores": cached.get("activity_scores", {}),
+        "wind_kmh": cached.get("wind_kmh")
+    })
 
 
 @app.route('/')
@@ -513,6 +549,265 @@ def create_weather_insights(
     scores["motorcycling"] = f"{score(8)}/10"
 
     return insight, travel, scores
+
+
+
+# ==========================================================
+# SKYSENSE INTELLIGENCE ENGINE
+# ==========================================================
+
+def _clamp(value, low=0, high=100):
+    return max(low, min(high, value))
+
+
+def _num(value, default=0.0):
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def calculate_skyscore(temp, feels_like, humidity, wind_kmh, rain_chance,
+                       aqi_text, uv_index=None, visibility_km=None,
+                       cloud_pct=None):
+    """Deterministic 0-100 comfort/activity score."""
+    score = 100.0
+
+    # Temperature comfort: ideal band is roughly 20-28 C.
+    t = _num(feels_like, _num(temp, 25))
+    if t < 12:
+        score -= min(22, (12 - t) * 1.6)
+    elif t > 30:
+        score -= min(28, (t - 30) * 1.8)
+    elif t < 18:
+        score -= (18 - t) * 0.8
+    elif t > 28:
+        score -= (t - 28) * 1.0
+
+    rain = _clamp(_num(rain_chance), 0, 100)
+    score -= rain * 0.20
+
+    wind = max(0, _num(wind_kmh))
+    if wind > 45:
+        score -= min(18, (wind - 45) * 0.45)
+    elif wind > 30:
+        score -= (wind - 30) * 0.25
+
+    humidity_n = _num(humidity)
+    if humidity_n > 85:
+        score -= min(10, (humidity_n - 85) * 0.4)
+    elif humidity_n < 25:
+        score -= min(5, (25 - humidity_n) * 0.2)
+
+    aqi_penalty = {
+        "Good": 0,
+        "Fair": 3,
+        "Moderate": 9,
+        "Poor": 20,
+        "Very Poor": 35,
+        "Unavailable": 0,
+    }.get(aqi_text, 0)
+    score -= aqi_penalty
+
+    if uv_index is not None:
+        uv = _num(uv_index)
+        if uv >= 11:
+            score -= 8
+        elif uv >= 8:
+            score -= 5
+        elif uv >= 6:
+            score -= 2
+
+    if visibility_km is not None:
+        vis = _num(visibility_km)
+        if vis < 2:
+            score -= 12
+        elif vis < 5:
+            score -= 6
+
+    if cloud_pct is not None:
+        cloud = _num(cloud_pct)
+        # Mild cloud cover is neutral; extreme overcast gets a small penalty.
+        if cloud >= 95:
+            score -= 3
+
+    score = int(round(_clamp(score)))
+    label = (
+        "Excellent" if score >= 85 else
+        "Very Good" if score >= 75 else
+        "Good" if score >= 60 else
+        "Fair" if score >= 45 else
+        "Challenging"
+    )
+    return {"score": score, "label": label}
+
+
+def calculate_forecast_confidence(forecast_list):
+    """Estimate confidence from short-term forecast consistency.
+
+    This is explicitly an internal consistency indicator, not a true
+    multi-model probability unless model-specific data is supplied.
+    """
+    if not forecast_list:
+        return {"score": 0, "label": "Unavailable", "reason": "No forecast data"}
+
+    temps, pops = [], []
+    for item in forecast_list[:16]:
+        try:
+            temps.append(float(item.get("main", {}).get("temp")))
+            pops.append(float(item.get("pop", 0)) * 100)
+        except (TypeError, ValueError):
+            continue
+
+    if len(temps) < 2:
+        return {"score": 50, "label": "Moderate", "reason": "Limited forecast samples"}
+
+    # Penalize abrupt adjacent changes. Smooth forecasts receive higher scores.
+    temp_jumps = [abs(b - a) for a, b in zip(temps, temps[1:])]
+    pop_jumps = [abs(b - a) for a, b in zip(pops, pops[1:])]
+    temp_instability = min(1.0, statistics.mean(temp_jumps) / 8.0)
+    pop_instability = min(1.0, statistics.mean(pop_jumps) / 60.0)
+
+    score = int(round(_clamp(96 - 45 * temp_instability - 35 * pop_instability)))
+    label = "High" if score >= 80 else "Moderate" if score >= 60 else "Low"
+    reason = (
+        "Forecast trend is internally consistent."
+        if score >= 80 else
+        "Some forecast variables change noticeably."
+        if score >= 60 else
+        "Forecast changes are volatile; treat timing with caution."
+    )
+    return {"score": score, "label": label, "reason": reason}
+
+
+def build_weather_story(temp, feels_like, description, rain_chance,
+                        wind_kmh, aqi_text, daily_forecasts=None):
+    """Generate a compact human-readable day story from supplied data."""
+    rain = int(_num(rain_chance))
+    t = round(_num(temp))
+    feels = round(_num(feels_like))
+    wind = round(_num(wind_kmh))
+
+    morning = "Comfortable" if 16 <= t <= 29 else ("Cool" if t < 16 else "Warm")
+    afternoon = "Heat may be the main factor" if feels >= 33 else "Generally manageable"
+    evening = "Rain risk is elevated" if rain >= 60 else (
+        "Keep an umbrella nearby" if rain >= 35 else "Rain risk is relatively low"
+    )
+
+    return {
+        "headline": f"{description.title()} with a current temperature of {t}°C.",
+        "morning": morning,
+        "afternoon": afternoon,
+        "evening": evening,
+        "summary": (
+            f"Feels like {feels}°C, wind around {wind} km/h, "
+            f"rain probability {rain}%, AQI {aqi_text}."
+        ),
+    }
+
+
+def calculate_activity_scores(temp, feels_like, humidity, wind_kmh,
+                              rain_chance, aqi_text, uv_index=None):
+    """Activity-specific deterministic scoring."""
+    base = calculate_skyscore(
+        temp, feels_like, humidity, wind_kmh, rain_chance,
+        aqi_text, uv_index
+    )["score"]
+
+    rain = _num(rain_chance)
+    wind = _num(wind_kmh)
+    feels = _num(feels_like, _num(temp, 25))
+    aqi_penalty = {"Good": 0, "Fair": 2, "Moderate": 7, "Poor": 18, "Very Poor": 30}.get(aqi_text, 0)
+
+    def activity(extra=0, heat_limit=None, wind_limit=None):
+        s = base + extra
+        if heat_limit is not None and feels > heat_limit:
+            s -= min(20, (feels - heat_limit) * 1.5)
+        if wind_limit is not None and wind > wind_limit:
+            s -= min(18, (wind - wind_limit) * 0.6)
+        if rain >= 60:
+            s -= 18
+        elif rain >= 35:
+            s -= 8
+        s -= aqi_penalty * 0.25
+        return int(round(_clamp(s)))
+
+    return {
+        "motorcycling": activity(-1, heat_limit=35, wind_limit=35),
+        "cycling": activity(0, heat_limit=32, wind_limit=30),
+        "running": activity(-2, heat_limit=30, wind_limit=25),
+        "hiking": activity(1, heat_limit=33, wind_limit=40),
+        "photography": activity(2, heat_limit=36, wind_limit=45),
+        "outdoor_dining": activity(0, heat_limit=32, wind_limit=25),
+        "beach": activity(2, heat_limit=36, wind_limit=35),
+    }
+
+
+def build_risk_alerts(temp, feels_like, wind_kmh, rain_chance,
+                      aqi_text, visibility_km=None):
+    alerts = []
+    t = _num(temp)
+    feels = _num(feels_like, t)
+    wind = _num(wind_kmh)
+    rain = _num(rain_chance)
+
+    if feels >= 40:
+        alerts.append({"level": "critical", "icon": "🔥", "title": "Extreme heat",
+                       "message": "Feels-like temperature is extremely high. Limit prolonged outdoor exposure."})
+    elif feels >= 35:
+        alerts.append({"level": "warning", "icon": "🌡️", "title": "High heat",
+                       "message": "Heat stress may be significant during prolonged outdoor activity."})
+
+    if rain >= 80:
+        alerts.append({"level": "critical", "icon": "🌧️", "title": "Very high rain risk",
+                       "message": "Heavy or persistent rain is possible. Keep outdoor plans flexible."})
+    elif rain >= 60:
+        alerts.append({"level": "warning", "icon": "☔", "title": "High rain risk",
+                       "message": "Rain is likely in the forecast window."})
+
+    if wind >= 45:
+        alerts.append({"level": "warning", "icon": "💨", "title": "Strong wind",
+                       "message": "Strong winds may affect cycling, motorcycling and exposed outdoor activities."})
+
+    if aqi_text in ("Poor", "Very Poor"):
+        alerts.append({"level": "warning", "icon": "😷", "title": "Poor air quality",
+                       "message": "Consider reducing prolonged strenuous outdoor activity."})
+
+    if visibility_km is not None and _num(visibility_km) < 2:
+        alerts.append({"level": "warning", "icon": "🌫️", "title": "Low visibility",
+                       "message": "Reduced visibility may affect driving and outdoor travel."})
+
+    return alerts
+
+
+def build_intelligence_payload(temp, feels_like, humidity, wind_speed,
+                               rain_chance, aqi_text, description,
+                               forecast_list, daily_forecasts,
+                               uv_index=None, visibility_km=None,
+                               cloud_pct=None):
+    wind_kmh = round(_num(wind_speed) * 3.6)
+    score = calculate_skyscore(
+        temp, feels_like, humidity, wind_kmh, rain_chance, aqi_text,
+        uv_index, visibility_km, cloud_pct
+    )
+    confidence = calculate_forecast_confidence(forecast_list)
+    activities = calculate_activity_scores(
+        temp, feels_like, humidity, wind_kmh, rain_chance, aqi_text, uv_index
+    )
+    alerts = build_risk_alerts(
+        temp, feels_like, wind_kmh, rain_chance, aqi_text, visibility_km
+    )
+    story = build_weather_story(
+        temp, feels_like, description, rain_chance, wind_kmh, aqi_text, daily_forecasts
+    )
+    return {
+        "skyscore": score,
+        "forecast_confidence": confidence,
+        "activities": activities,
+        "alerts": alerts,
+        "weather_story": story,
+        "wind_kmh": wind_kmh,
+    }
 
 
 class ApiError(Exception):
@@ -880,7 +1175,7 @@ def weather():
     (
         insight_text,
         travel_text,
-        activities
+        legacy_activities
     ) = create_weather_insights(
         resolved_city_name,
         temp,
@@ -891,6 +1186,25 @@ def weather():
         aqi_text,
         chance_of_rain
     )
+
+    intelligence = build_intelligence_payload(
+        temp=temp,
+        feels_like=feels_like,
+        humidity=humidity,
+        wind_speed=wind_speed,
+        rain_chance=chance_of_rain,
+        aqi_text=aqi_text,
+        description=description,
+        forecast_list=forecast_list,
+        daily_forecasts=daily_forecasts,
+        uv_index=data.get("uvi"),
+        visibility_km=(data.get("visibility", 0) / 1000 if data.get("visibility") is not None else None),
+        cloud_pct=data.get("cloud", {}).get("all")
+    )
+    activities = {
+        key: f"{value}/10"
+        for key, value in intelligence["activities"].items()
+    }
 
     chatbot_context = (
         f"Current Weather in {resolved_city_name}: "
@@ -932,6 +1246,12 @@ def weather():
         "activities": activities,
         "forecast": daily_forecasts,
         "forecast_status": forecast_status,
+        "skyscore": intelligence["skyscore"],
+        "forecast_confidence": intelligence["forecast_confidence"],
+        "weather_story": intelligence["weather_story"],
+        "risk_alerts": intelligence["alerts"],
+        "activity_scores": intelligence["activities"],
+        "wind_kmh": intelligence["wind_kmh"],
         "chatbot_context": chatbot_context,
         "cached": False,
         "stale": False
