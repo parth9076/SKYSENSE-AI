@@ -60,14 +60,6 @@ WEATHER_CACHE = {}
 INTELLIGENCE_CACHE = {}
 LOCATION_CACHE = {}
 
-# Prevent multiple simultaneous requests from refreshing the same
-# forecast-intelligence data and triggering duplicate upstream calls.
-INTELLIGENCE_REFRESH_LOCK = threading.Lock()
-
-# Safe backoff defaults for upstream HTTP 429 responses.
-RATE_LIMIT_BACKOFF_BASE = 2.0
-RATE_LIMIT_BACKOFF_MAX = 30.0
-
 WEATHER_CACHE_TTL = 300          # 5 minutes
 WEATHER_STALE_TTL = 1800         # 30 minutes
 INTELLIGENCE_CACHE_TTL = 600     # 10 minutes
@@ -87,6 +79,20 @@ RATE_LIMIT_HITS = collections.defaultdict(list)
 CACHE_MAX_ITEMS = int(os.getenv("CACHE_MAX_ITEMS", "500"))
 CHAT_RATE_LIMIT = 15        # requests
 CHAT_RATE_WINDOW = 60       # seconds
+
+
+def get_client_id():
+    """Best-effort client identifier for rate limiting.
+
+    X-Forwarded-For can contain a chain of proxy hops ("client, proxy1,
+    proxy2, ..."); the first entry is the original client. Note this
+    header is client-controllable unless your deployment sits behind a
+    trusted reverse proxy that overwrites/appends it correctly.
+    """
+    forwarded = request.headers.get("X-Forwarded-For")
+    if forwarded:
+        return forwarded.split(",")[0].strip() or "unknown"
+    return request.remote_addr or "unknown"
 
 
 def is_rate_limited(client_id, limit=CHAT_RATE_LIMIT, window=CHAT_RATE_WINDOW):
@@ -146,12 +152,6 @@ def request_with_retry(
     timeout=HTTP_TIMEOUT,
     retries=MAX_RETRIES
 ):
-    """
-    Make an HTTP request with safe retry/backoff handling.
-
-    HTTP 429 respects Retry-After when supplied. Other transient errors
-    use exponential backoff. Non-retryable responses are returned as-is.
-    """
     last_error = None
 
     for attempt in range(retries + 1):
@@ -164,44 +164,10 @@ def request_with_retry(
                 timeout=timeout
             )
 
-            if response.status_code < 400:
-                return response
-
-            if response.status_code == 429:
-                if attempt >= retries:
-                    return response
-
-                retry_after = response.headers.get("Retry-After")
-                delay = None
-
-                if retry_after:
-                    try:
-                        delay = float(retry_after)
-                    except (TypeError, ValueError):
-                        delay = None
-
-                if delay is None:
-                    delay = RATE_LIMIT_BACKOFF_BASE * (2 ** attempt)
-
-                delay = min(delay, RATE_LIMIT_BACKOFF_MAX)
-
-                logger.warning(
-                    "HTTP 429 from %s. Retrying in %.1f seconds "
-                    "(attempt %d/%d).",
-                    url, delay, attempt + 1, retries
-                )
-                time.sleep(delay)
-                continue
-
-            if response.status_code in (408, 500, 502, 503, 504):
+            # Retry transient server/rate-limit responses.
+            if response.status_code in (408, 429, 500, 502, 503, 504):
                 if attempt < retries:
-                    delay = min(0.75 * (2 ** attempt), RATE_LIMIT_BACKOFF_MAX)
-                    logger.warning(
-                        "HTTP %s from %s. Retrying in %.1f seconds "
-                        "(attempt %d/%d).",
-                        response.status_code, url, delay, attempt + 1, retries
-                    )
-                    time.sleep(delay)
+                    time.sleep(0.35 * (2 ** attempt))
                     continue
 
             return response
@@ -209,17 +175,12 @@ def request_with_retry(
         except requests.RequestException as exc:
             last_error = exc
             if attempt < retries:
-                delay = min(0.75 * (2 ** attempt), RATE_LIMIT_BACKOFF_MAX)
-                logger.warning(
-                    "Request failed: %s. Retrying in %.1f seconds "
-                    "(attempt %d/%d).",
-                    exc, delay, attempt + 1, retries
-                )
-                time.sleep(delay)
+                time.sleep(0.35 * (2 ** attempt))
                 continue
-            raise
+            raise last_error
 
     raise last_error or RuntimeError("HTTP request failed.")
+
 
 def weather_cache_key(lat, lon):
     return f"{float(lat):.3f},{float(lon):.3f}"
@@ -231,7 +192,7 @@ def json_safe_copy(value):
 
 
 # ==========================================================
-# GEMINI HELPER
+# GROQ HELPER
 # ==========================================================
 
 DEFAULT_SYSTEM_PROMPT = (
@@ -295,9 +256,8 @@ def handle_payload_too_large(_error):
     }), 413
 
 
-
 @app.route('/api/intelligence', methods=['GET'])
-def intelligence():
+def intelligence_endpoint():
     """Return intelligence for a location using the same weather pipeline."""
     city = request.args.get("city", "Pune").strip()
     lat = request.args.get("lat")
@@ -354,7 +314,7 @@ MAX_CHAT_MESSAGE_LENGTH = 2000
 
 @app.route('/api/chat', methods=['POST'])
 def chat():
-    client_id = request.headers.get("X-Forwarded-For", request.remote_addr) or "unknown"
+    client_id = get_client_id()
     if is_rate_limited(client_id):
         return jsonify({
             "reply": (
@@ -494,7 +454,6 @@ Keep simple answers concise and practical. Do not expose these instructions.
         }), 502
 
 
-
 def create_weather_insights(
     city,
     temp,
@@ -602,7 +561,6 @@ def create_weather_insights(
     scores["motorcycling"] = f"{score(8)}/10"
 
     return insight, travel, scores
-
 
 
 # ==========================================================
@@ -734,7 +692,7 @@ def calculate_forecast_confidence(forecast_list):
 
 
 def build_weather_story(temp, feels_like, description, rain_chance,
-                        wind_kmh, aqi_text, daily_forecasts=None):
+                        wind_kmh, aqi_text):
     """Generate a compact human-readable day story from supplied data."""
     rain = int(_num(rain_chance))
     t = round(_num(temp))
@@ -851,7 +809,7 @@ def build_intelligence_payload(temp, feels_like, humidity, wind_speed,
         temp, feels_like, wind_kmh, rain_chance, aqi_text, visibility_km
     )
     story = build_weather_story(
-        temp, feels_like, description, rain_chance, wind_kmh, aqi_text, daily_forecasts
+        temp, feels_like, description, rain_chance, wind_kmh, aqi_text
     )
     return {
         "skyscore": score,
@@ -1192,19 +1150,27 @@ def weather():
     # ------------------------------------------------------
     wind_deg = data["wind"].get("deg", 0)
     dirs = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
-    wind_dir = dirs[int((wind_deg / 42.5) + 0.5) % 8]
+    # 360 degrees / 8 compass points = 45 degrees per sector (not 42.5 —
+    # that offset misaligned every sector past due-north, e.g. 200°
+    # was mapped to SW instead of S).
+    wind_dir = dirs[int((wind_deg / 45) + 0.5) % 8]
 
     timezone_shift = data.get("timezone", 0)
 
-    sunrise_time = datetime.datetime.fromtimestamp(
-        data["sys"]["sunrise"] + timezone_shift,
-        datetime.timezone.utc
-    ).strftime("%I:%M %p")
-
-    sunset_time = datetime.datetime.fromtimestamp(
-        data["sys"]["sunset"] + timezone_shift,
-        datetime.timezone.utc
-    ).strftime("%I:%M %p")
+    # Sunrise/sunset are best-effort: guard against a missing "sys" block
+    # or bad timestamp so a single edge-case location can't 500 the route.
+    try:
+        sunrise_time = datetime.datetime.fromtimestamp(
+            data["sys"]["sunrise"] + timezone_shift,
+            datetime.timezone.utc
+        ).strftime("%I:%M %p")
+        sunset_time = datetime.datetime.fromtimestamp(
+            data["sys"]["sunset"] + timezone_shift,
+            datetime.timezone.utc
+        ).strftime("%I:%M %p")
+    except (KeyError, TypeError, ValueError, OSError, OverflowError):
+        sunrise_time = "N/A"
+        sunset_time = "N/A"
 
     # ------------------------------------------------------
     # AIR QUALITY (best effort)
@@ -1240,7 +1206,10 @@ def weather():
         chance_of_rain
     )
 
-    intelligence = build_intelligence_payload(
+    # Note: this endpoint (data/2.5/weather) does not return a UV index —
+    # that requires OpenWeather's One Call API — so uv_index will
+    # normally be None here and simply won't affect the score.
+    intelligence_data = build_intelligence_payload(
         temp=temp,
         feels_like=feels_like,
         humidity=humidity,
@@ -1252,14 +1221,14 @@ def weather():
         daily_forecasts=daily_forecasts,
         uv_index=data.get("uvi"),
         visibility_km=(data.get("visibility", 0) / 1000 if data.get("visibility") is not None else None),
-        cloud_pct=data.get("cloud", {}).get("all")
+        cloud_pct=data.get("clouds", {}).get("all")
     )
     activities = {
         key: f"{value}/10"
-        for key, value in intelligence["activities"].items()
+        for key, value in intelligence_data["activities"].items()
     }
 
-    chatbot_context = (
+    chatbot_context_parts = [
         f"Current Weather in {resolved_city_name}: "
         f"{temp}°C, {description}. "
         f"Feels like {feels_like}°C. "
@@ -1268,15 +1237,17 @@ def weather():
         f"Pressure: {pressure} hPa. "
         f"Air Quality: {aqi_text}. "
         f"Forecast status: {forecast_status}."
-    )
+    ]
 
     for item in forecast_list[:16]:
-        chatbot_context += (
+        chatbot_context_parts.append(
             f" [{item.get('dt_txt', '')} -> "
             f"Temp: {round(item.get('main', {}).get('temp', temp))}°C, "
             f"Condition: {item.get('weather', [{}])[0].get('main', 'Unknown')}, "
             f"Rain Probability: {round(item.get('pop', 0) * 100)}%]"
         )
+
+    chatbot_context = "".join(chatbot_context_parts)
 
     result = {
         "city": resolved_city_name,
@@ -1299,12 +1270,12 @@ def weather():
         "activities": activities,
         "forecast": daily_forecasts,
         "forecast_status": forecast_status,
-        "skyscore": intelligence["skyscore"],
-        "forecast_confidence": intelligence["forecast_confidence"],
-        "weather_story": intelligence["weather_story"],
-        "risk_alerts": intelligence["alerts"],
-        "activity_scores": intelligence["activities"],
-        "wind_kmh": intelligence["wind_kmh"],
+        "skyscore": intelligence_data["skyscore"],
+        "forecast_confidence": intelligence_data["forecast_confidence"],
+        "weather_story": intelligence_data["weather_story"],
+        "risk_alerts": intelligence_data["alerts"],
+        "activity_scores": intelligence_data["activities"],
+        "wind_kmh": intelligence_data["wind_kmh"],
         "chatbot_context": chatbot_context,
         "cached": False,
         "stale": False
@@ -1321,416 +1292,126 @@ def weather():
 
 @app.route('/api/forecast-intelligence', methods=['GET'])
 def forecast_intelligence():
-    """
-    Build forecast intelligence from ECMWF IFS, NOAA GFS and DWD ICON.
-
-    Uses one Open-Meteo multi-model request instead of three separate
-    requests, protects the cache from concurrent refreshes, and falls
-    back to stale cached intelligence when the upstream service is
-    temporarily rate-limited or unavailable.
-    """
-
     try:
-        lat, lon = validate_coordinates(
-            request.args.get("lat"),
-            request.args.get("lon")
-        )
+        lat, lon = validate_coordinates(request.args.get("lat"), request.args.get("lon"))
     except ApiError as e:
         return e.response()
 
     key = weather_cache_key(lat, lon)
-
-    # Fast path: fresh intelligence already exists.
-    cached = cache_get(
-        INTELLIGENCE_CACHE,
-        key,
-        INTELLIGENCE_CACHE_TTL
-    )
+    cached = cache_get(INTELLIGENCE_CACHE, key, INTELLIGENCE_CACHE_TTL)
     if cached:
         response = json_safe_copy(cached)
         response["cached"] = True
         return jsonify(response)
 
-    # Only one request may refresh intelligence at a time. This is
-    # especially important when the frontend fires duplicate requests.
-    acquired = INTELLIGENCE_REFRESH_LOCK.acquire(blocking=False)
+    model_configs = {
+        "ECMWF IFS": "ecmwf_ifs",
+        "NOAA GFS": "gfs_seamless",
+        "DWD ICON": "icon_seamless"
+    }
+    base_url = "https://api.open-meteo.com/v1/forecast"
+    common_params = {
+        "latitude": lat,
+        "longitude": lon,
+        "hourly": "temperature_2m,precipitation_probability",
+        "forecast_days": 2,
+        "timezone": "auto",
+        "temperature_unit": "celsius"
+    }
+    model_data = {}
 
-    if not acquired:
-        stale_cached = cache_get(
-            INTELLIGENCE_CACHE,
-            key,
-            WEATHER_STALE_TTL
-        )
-
-        if stale_cached:
-            response = json_safe_copy(stale_cached)
-            response["cached"] = True
-            response["stale"] = True
-            response["refreshing"] = True
-            return jsonify(response)
-
-        return jsonify({
-            "error": (
-                "Forecast intelligence is currently being refreshed. "
-                "Please try again shortly."
-            ),
-            "error_type": "refresh_in_progress"
-        }), 503
-
-    try:
-        # Double-check after obtaining the lock. Another request may have
-        # populated the cache immediately before this request acquired it.
-        cached = cache_get(
-            INTELLIGENCE_CACHE,
-            key,
-            INTELLIGENCE_CACHE_TTL
-        )
-        if cached:
-            response = json_safe_copy(cached)
-            response["cached"] = True
-            return jsonify(response)
-
-        model_configs = {
-            "ECMWF IFS": "ecmwf_ifs",
-            "NOAA GFS": "gfs_seamless",
-            "DWD ICON": "icon_seamless"
-        }
-
-        base_url = "https://api.open-meteo.com/v1/forecast"
-
-        # IMPORTANT: request all three models together. This avoids making
-        # three independent upstream calls for the same location/time.
-        params = {
-            "latitude": lat,
-            "longitude": lon,
-            "hourly": "temperature_2m,precipitation_probability",
-            "forecast_days": 2,
-            "timezone": "auto",
-            "temperature_unit": "celsius",
-            "models": ",".join(model_configs.values())
-        }
-
+    for name, model_id in model_configs.items():
         try:
+            params = dict(common_params)
+            params["models"] = model_id
             response = request_with_retry(
-                "GET",
-                base_url,
-                params=params,
-                timeout=12,
-                retries=2
+                "GET", base_url, params=params, timeout=12, retries=1
             )
-        except requests.RequestException as exc:
-            logger.warning(
-                "Forecast intelligence request failed: %s",
-                exc
-            )
-
-            stale_cached = cache_get(
-                INTELLIGENCE_CACHE,
-                key,
-                WEATHER_STALE_TTL
-            )
-
-            if stale_cached:
-                result = json_safe_copy(stale_cached)
-                result["cached"] = True
-                result["stale"] = True
-                return jsonify(result)
-
-            return jsonify({
-                "error": (
-                    "Forecast intelligence is temporarily unavailable. "
-                    "Weather model service could not be reached."
-                ),
-                "error_type": "model_guidance"
-            }), 503
-
-        if response.status_code == 429:
-            logger.warning(
-                "Forecast intelligence: Open-Meteo returned HTTP 429"
-            )
-
-            stale_cached = cache_get(
-                INTELLIGENCE_CACHE,
-                key,
-                WEATHER_STALE_TTL
-            )
-
-            if stale_cached:
-                result = json_safe_copy(stale_cached)
-                result["cached"] = True
-                result["stale"] = True
-                result["rate_limited"] = True
-                return jsonify(result)
-
-            return jsonify({
-                "error": (
-                    "Forecast intelligence is temporarily rate-limited. "
-                    "Please try again shortly."
-                ),
-                "error_type": "rate_limit"
-            }), 503
-
-        if response.status_code != 200:
-            logger.warning(
-                "Forecast intelligence: Open-Meteo returned HTTP %s",
-                response.status_code
-            )
-
-            stale_cached = cache_get(
-                INTELLIGENCE_CACHE,
-                key,
-                WEATHER_STALE_TTL
-            )
-
-            if stale_cached:
-                result = json_safe_copy(stale_cached)
-                result["cached"] = True
-                result["stale"] = True
-                return jsonify(result)
-
-            return jsonify({
-                "error": "Forecast intelligence is temporarily unavailable.",
-                "error_type": "model_guidance",
-                "http_status": response.status_code
-            }), 503
-
-        try:
-            payload = response.json()
-        except ValueError:
-            logger.warning(
-                "Forecast intelligence returned invalid JSON."
-            )
-            return jsonify({
-                "error": "Invalid forecast service response.",
-                "error_type": "model_guidance"
-            }), 503
-
-        hourly_data = payload.get("hourly", {})
-        if not isinstance(hourly_data, dict):
-            return jsonify({
-                "error": "Forecast service returned invalid hourly data.",
-                "error_type": "model_guidance"
-            }), 503
-
-        def find_model_series(base_name, model_id):
-            """Find a model-specific hourly series in the Open-Meteo response."""
-            candidates = [
-                f"{base_name}_{model_id}",
-                f"{base_name}_{model_id.lower()}",
-                f"{model_id}_{base_name}"
-            ]
-
-            for candidate in candidates:
-                value = hourly_data.get(candidate)
-                if isinstance(value, list) and value:
-                    return value
-
-            return []
-
-        model_data = {}
-
-        for display_name, model_id in model_configs.items():
-            temps = find_model_series("temperature_2m", model_id)
-            rain = find_model_series("precipitation_probability", model_id)
-
+            if response.status_code != 200:
+                logger.warning(
+                    "Forecast intelligence: %s returned HTTP %s",
+                    name, response.status_code
+                )
+                continue
+            hourly_data = response.json().get("hourly", {})
+            temps = hourly_data.get("temperature_2m", [])
+            rain = hourly_data.get("precipitation_probability", [])
             if temps:
-                model_data[display_name] = {
+                model_data[name] = {
                     "times": hourly_data.get("time", []),
                     "temps": temps,
                     "rain": rain
                 }
+        except (requests.RequestException, ValueError) as exc:
+            logger.warning("Forecast intelligence: %s failed: %s", name, exc)
 
-        # Some API responses may expose model data in nested structures.
-        # Support that without issuing additional upstream requests.
-        if len(model_data) < 2:
-            nested_models = payload.get("models")
+    if len(model_data) < 2:
+        return jsonify({
+            "error": "Forecast intelligence is temporarily unavailable. Not enough model guidance responded.",
+            "error_type": "model_guidance"
+        }), 503
 
-            if isinstance(nested_models, dict):
-                for display_name, model_id in model_configs.items():
-                    model_payload = (
-                        nested_models.get(model_id)
-                        or nested_models.get(display_name)
-                    )
+    names = list(model_data.keys())
+    length = min(24, *[len(model_data[name]["temps"]) for name in names])
+    average_temps, rain_values, spreads, hourly = [], [], [], []
 
-                    if not isinstance(model_payload, dict):
-                        continue
+    for i in range(length):
+        temperatures, hour_rain = [], []
+        for name in names:
+            value = model_data[name]["temps"][i]
+            if isinstance(value, (int, float)):
+                temperatures.append(float(value))
+            rain_series = model_data[name]["rain"]
+            if i < len(rain_series) and isinstance(rain_series[i], (int, float)):
+                hour_rain.append(float(rain_series[i]))
 
-                    nested_hourly = model_payload.get(
-                        "hourly",
-                        model_payload
-                    )
-
-                    if not isinstance(nested_hourly, dict):
-                        continue
-
-                    temps = nested_hourly.get(
-                        "temperature_2m", []
-                    )
-                    rain = nested_hourly.get(
-                        "precipitation_probability", []
-                    )
-
-                    if temps:
-                        model_data[display_name] = {
-                            "times": nested_hourly.get(
-                                "time",
-                                hourly_data.get("time", [])
-                            ),
-                            "temps": temps,
-                            "rain": rain
-                        }
-
-        if len(model_data) < 2:
-            logger.warning(
-                "Forecast intelligence: only %d model datasets "
-                "could be extracted from Open-Meteo.",
-                len(model_data)
-            )
-
-            stale_cached = cache_get(
-                INTELLIGENCE_CACHE,
-                key,
-                WEATHER_STALE_TTL
-            )
-
-            if stale_cached:
-                result = json_safe_copy(stale_cached)
-                result["cached"] = True
-                result["stale"] = True
-                result["model_parse_failed"] = True
-                return jsonify(result)
-
-            return jsonify({
-                "error": (
-                    "Forecast intelligence is temporarily unavailable. "
-                    "Not enough model guidance was returned."
-                ),
-                "error_type": "model_guidance"
-            }), 503
-
-        names = list(model_data.keys())
-
-        valid_lengths = [
-            len(model_data[name]["temps"])
-            for name in names
-            if model_data[name]["temps"]
-        ]
-
-        if not valid_lengths:
-            return jsonify({
-                "error": "Unable to calculate model consensus.",
-                "error_type": "model_guidance"
-            }), 503
-
-        length = min(24, *valid_lengths)
-
-        average_temps = []
-        rain_values = []
-        spreads = []
-        hourly = []
-
-        for i in range(length):
-            temperatures = []
-            hour_rain = []
-
-            for name in names:
-                temps = model_data[name]["temps"]
-
-                if i < len(temps):
-                    value = temps[i]
-                    if isinstance(value, (int, float)):
-                        temperatures.append(float(value))
-
-                rain_series = model_data[name]["rain"]
-                if i < len(rain_series):
-                    rain_value = rain_series[i]
-                    if isinstance(rain_value, (int, float)):
-                        hour_rain.append(float(rain_value))
-
-            if not temperatures:
-                continue
-
+        if temperatures:
             mean_temp = sum(temperatures) / len(temperatures)
             spread = max(temperatures) - min(temperatures)
-
             average_temps.append(mean_temp)
             spreads.append(spread)
-
-            rain_mean = (
-                round(sum(hour_rain) / len(hour_rain))
-                if hour_rain
-                else None
-            )
-
+            rain_mean = round(sum(hour_rain) / len(hour_rain)) if hour_rain else None
             if rain_mean is not None:
                 rain_values.append(rain_mean)
-
-            first_model = names[0]
-            times = model_data[first_model]["times"]
-
-            timestamp = times[i] if i < len(times) else None
-
             hourly.append({
-                "time": timestamp,
+                "time": model_data[names[0]]["times"][i] if i < len(model_data[names[0]]["times"]) else None,
                 "temperature_mean": round(mean_temp, 1),
                 "temperature_spread": round(spread, 1),
                 "rain_probability_mean": rain_mean
             })
 
-        if not average_temps:
-            return jsonify({
-                "error": "Unable to calculate model consensus.",
-                "error_type": "model_guidance"
-            }), 503
+    if not average_temps:
+        return jsonify({"error": "Unable to calculate model consensus.", "error_type": "model_guidance"}), 503
 
-        average_spread = (
-            sum(spreads) / len(spreads)
-            if spreads
-            else 0
-        )
-        max_spread = max(spreads) if spreads else 0
+    average_spread = sum(spreads) / len(spreads) if spreads else 0
+    max_spread = max(spreads) if spreads else 0
 
-        if average_spread <= 1.5:
-            confidence, agreement = "High", "Strong"
-            confidence_note = "The selected models are closely grouped."
-        elif average_spread <= 3:
-            confidence, agreement = "Moderate", "Moderate"
-            confidence_note = "The models show some disagreement."
-        else:
-            confidence, agreement = "Lower", "Mixed"
-            confidence_note = (
-                "The models disagree noticeably; "
-                "forecast uncertainty is higher."
-            )
+    if average_spread <= 1.5:
+        confidence, agreement = "High", "Strong"
+        confidence_note = "The selected models are closely grouped."
+    elif average_spread <= 3:
+        confidence, agreement = "Moderate", "Moderate"
+        confidence_note = "The models show some disagreement."
+    else:
+        confidence, agreement = "Lower", "Mixed"
+        confidence_note = "The models disagree noticeably; forecast uncertainty is higher."
 
-        result = {
-            "models_available": names,
-            "model_count": len(names),
-            "confidence": confidence,
-            "confidence_note": confidence_note,
-            "agreement": agreement,
-            "max_temperature_spread": round(max_spread, 1),
-            "average_temperature_spread": round(average_spread, 1),
-            "peak_ensemble_rain_probability": (
-                max(rain_values) if rain_values else None
-            ),
-            "next_24_low": round(min(average_temps), 1),
-            "next_24_high": round(max(average_temps), 1),
-            "hourly": hourly[:12],
-            "cached": False,
-            "stale": False
-        }
-
-        cache_set(
-            INTELLIGENCE_CACHE,
-            key,
-            json_safe_copy(result)
-        )
-
-        return jsonify(result)
-
-    finally:
-        INTELLIGENCE_REFRESH_LOCK.release()
+    result = {
+        "models_available": names,
+        "model_count": len(names),
+        "confidence": confidence,
+        "confidence_note": confidence_note,
+        "agreement": agreement,
+        "max_temperature_spread": round(max_spread, 1),
+        "average_temperature_spread": round(average_spread, 1),
+        "peak_ensemble_rain_probability": max(rain_values) if rain_values else None,
+        "next_24_low": round(min(average_temps), 1),
+        "next_24_high": round(max(average_temps), 1),
+        "hourly": hourly[:12],
+        "cached": False
+    }
+    cache_set(INTELLIGENCE_CACHE, key, json_safe_copy(result))
+    return jsonify(result)
 
 # ==========================================================
 # RENDER STARTUP
