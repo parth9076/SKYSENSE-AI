@@ -1,4 +1,4 @@
-# SkySense AI 2.0 ☀️
+# SkySense AI  ☀️
 
 Production-ready AI weather intelligence dashboard featuring real-time telemetry, advanced SkyScore™ analytics, interactive weather timelines, pinned locations, and an embedded LLM assistant powered by Groq.
 
