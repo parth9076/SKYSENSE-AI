@@ -154,9 +154,12 @@
         .glance-lbl { font-size: 0.75rem; color: var(--sky-dim); margin-bottom: 8px; text-transform: uppercase; letter-spacing: .04em; }
         .glance-val { font-size: 1.1rem; font-weight: 600; }
 
-        .chart-container { height: 190px; width: 100%; margin-top: 20px; position: relative; }
-        .chart-container canvas { display: block; max-width: 100%; }
+        /* Temperature trend chart: fixed parent height is required by Chart.js */
+        .chart-container { position: relative; width: 100%; height: 240px; min-height: 240px; margin-top: 20px; }
+        .chart-container canvas { display: block; width: 100% !important; height: 100% !important; max-width: 100%; }
         .chart-fallback { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; color: var(--sky-dim); font-size: .8rem; padding: 10px; }
+        .chart-fallback[hidden] { display: none !important; }
+        @media (max-width: 600px) { .chart-container { height: 220px; min-height: 220px; } }
 
         .empty-note { color: var(--sky-dim); font-size: .8rem; line-height: 1.5; }
 
@@ -937,7 +940,7 @@
             .forEach((node) => { if (node) node.style.display = showIntel ? '' : 'none'; });
 
         // Chart.js needs a resize nudge when its container becomes visible again.
-        if (showIntel && trendChart) trendChart.resize();
+        if (showIntel) resizeTrendChart();
     }
 
     document.querySelectorAll('[data-tab]').forEach((node) => {
@@ -1133,69 +1136,201 @@
     });
 
     /* =========================================================
-       CHART
+       TEMPERATURE TREND CHART — REPLACEMENT
        ========================================================= */
     let trendChart = null;
-    let pendingTrend = null;
+    let pendingTrend = [];
+    let trendLoadListenersAttached = false;
+
+    function normalizeTrendData(forecast) {
+        if (!Array.isArray(forecast)) return [];
+
+        return forecast.slice(0, 5).map((day) => {
+            if (!day || typeof day !== 'object') return null;
+
+            const high = Number(day.temp);
+            const low = Number(day.min_temp);
+            if (!Number.isFinite(high) || !Number.isFinite(low) ||
+                high < -100 || high > 70 || low < -100 || low > 70) return null;
+
+            return {
+                label: String(day.day || day.date || '--'),
+                high,
+                low
+            };
+        }).filter(Boolean);
+    }
+
+    function showTrendFallback(message) {
+        if (!el.chartFallback) return;
+        el.chartFallback.hidden = false;
+        el.chartFallback.textContent = message;
+    }
 
     function renderTrend() {
-        if (!window.Chart || !el.trendChart || !pendingTrend) return;
+        if (!el.trendChart) return;
+        if (typeof window.Chart === 'undefined') {
+            showTrendFallback('Chart library is unavailable. Check your connection and refresh.');
+            return;
+        }
+
+        const days = normalizeTrendData(pendingTrend);
+        if (!days.length) {
+            if (trendChart) {
+                trendChart.destroy();
+                trendChart = null;
+            }
+            showTrendFallback('Temperature trend is unavailable for this location.');
+            return;
+        }
+
         if (el.chartFallback) el.chartFallback.hidden = true;
 
-        const days = pendingTrend;
-        const labels = days.map((d) => d.day || '--');
-        const highs = days.map((d) => num(d.temp));
-        const lows = days.map((d) => num(d.min_temp));
+        const labels = days.map((day) => day.label);
+        const highs = days.map((day) => day.high);
+        const lows = days.map((day) => day.low);
 
         if (trendChart) {
             trendChart.data.labels = labels;
             trendChart.data.datasets[0].data = highs;
             trendChart.data.datasets[1].data = lows;
-            trendChart.update();
+            trendChart.update('active');
             return;
         }
 
         const ctx = el.trendChart.getContext('2d');
-        const gradient = ctx.createLinearGradient(0, 0, 0, 190);
-        gradient.addColorStop(0, 'rgba(59,130,246,.35)');
-        gradient.addColorStop(1, 'rgba(59,130,246,0)');
+        if (!ctx) {
+            showTrendFallback('Could not initialize the temperature chart.');
+            return;
+        }
+
+        const gradient = ctx.createLinearGradient(0, 0, 0, 240);
+        gradient.addColorStop(0, 'rgba(96,165,250,0.30)');
+        gradient.addColorStop(1, 'rgba(96,165,250,0.00)');
 
         trendChart = new Chart(ctx, {
             type: 'line',
             data: {
                 labels,
                 datasets: [
-                    { label: 'High °C', data: highs, borderColor: '#3b82f6', backgroundColor: gradient, borderWidth: 2, pointBackgroundColor: '#fff', pointBorderColor: '#3b82f6', pointRadius: 4, fill: true, tension: .4 },
-                    { label: 'Low °C', data: lows, borderColor: 'rgba(148,163,184,.75)', borderWidth: 1.5, borderDash: [5, 4], pointRadius: 3, pointBackgroundColor: '#0b1329', pointBorderColor: 'rgba(148,163,184,.9)', fill: false, tension: .4 }
+                    {
+                        label: 'Maximum temperature (°C)',
+                        data: highs,
+                        borderColor: '#60a5fa',
+                        backgroundColor: gradient,
+                        borderWidth: 2.5,
+                        pointRadius: 4,
+                        pointHoverRadius: 7,
+                        pointBackgroundColor: '#ffffff',
+                        pointBorderColor: '#60a5fa',
+                        pointBorderWidth: 2,
+                        fill: true,
+                        tension: 0.35,
+                        spanGaps: false
+                    },
+                    {
+                        label: 'Minimum temperature (°C)',
+                        data: lows,
+                        borderColor: 'rgba(161,161,170,0.9)',
+                        backgroundColor: 'transparent',
+                        borderWidth: 2,
+                        borderDash: [5, 4],
+                        pointRadius: 3,
+                        pointHoverRadius: 6,
+                        pointBackgroundColor: '#0b1329',
+                        pointBorderColor: 'rgba(161,161,170,0.9)',
+                        pointBorderWidth: 2,
+                        fill: false,
+                        tension: 0.35,
+                        spanGaps: false
+                    }
                 ]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                animation: reduceMotion ? false : { duration: 650, easing: 'easeOutQuart' },
+                resizeDelay: 100,
+                animation: reduceMotion ? false : { duration: 600, easing: 'easeOutQuart' },
                 interaction: { mode: 'index', intersect: false },
                 plugins: {
-                    legend: { display: true, labels: { color: '#94a3b8', boxWidth: 10, boxHeight: 10, usePointStyle: true } },
-                    tooltip: { backgroundColor: 'rgba(15,23,42,.95)', borderColor: 'rgba(148,163,184,.2)', borderWidth: 1, padding: 10 }
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        labels: {
+                            color: '#94a3b8',
+                            boxWidth: 10,
+                            boxHeight: 10,
+                            usePointStyle: true,
+                            padding: 14,
+                            font: { size: 11 }
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(15,23,42,0.96)',
+                        titleColor: '#ffffff',
+                        bodyColor: '#e2e8f0',
+                        borderColor: 'rgba(148,163,184,0.25)',
+                        borderWidth: 1,
+                        padding: 12,
+                        callbacks: {
+                            label(context) {
+                                const value = context.parsed.y;
+                                return `${context.dataset.label}: ${Number.isFinite(value) ? value.toFixed(1) + '°C' : 'unavailable'}`;
+                            }
+                        }
+                    }
                 },
                 scales: {
-                    y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
-                    x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+                    x: {
+                        grid: { display: false },
+                        border: { display: false },
+                        ticks: { color: '#94a3b8', maxRotation: 0, autoSkip: false, font: { size: 11 } }
+                    },
+                    y: {
+                        beginAtZero: false,
+                        grace: '10%',
+                        border: { display: false },
+                        grid: { color: 'rgba(255,255,255,0.07)' },
+                        ticks: { color: '#94a3b8', padding: 8, callback(value) { return `${value}°C`; } },
+                        title: { display: true, text: 'Temperature (°C)', color: '#94a3b8', font: { size: 11 } }
+                    }
                 }
             }
         });
     }
 
     function updateTrendChart(days) {
-        pendingTrend = Array.isArray(days) ? days : [];
-        if (window.Chart) { renderTrend(); return; }
-        if (el.chartFallback) { el.chartFallback.hidden = false; el.chartFallback.textContent = 'Chart library is still loading…'; }
-        // Chart.js is deferred, so render as soon as it lands (or report failure).
+        pendingTrend = Array.isArray(days) ? days.slice(0, 5) : [];
+
+        if (typeof window.Chart !== 'undefined') {
+            renderTrend();
+            return;
+        }
+
+        showTrendFallback('Temperature trend is loading…');
         const lib = $('chartLib');
-        lib?.addEventListener('load', renderTrend, { once: true });
-        lib?.addEventListener('error', () => {
-            if (el.chartFallback) { el.chartFallback.hidden = false; el.chartFallback.textContent = "Trend chart couldn't load. The forecast list above has the same numbers."; }
+        if (!lib) {
+            showTrendFallback('Chart.js script was not found on this page.');
+            return;
+        }
+
+        if (trendLoadListenersAttached) return;
+        trendLoadListenersAttached = true;
+        lib.addEventListener('load', () => {
+            trendLoadListenersAttached = false;
+            renderTrend();
         }, { once: true });
+        lib.addEventListener('error', () => {
+            trendLoadListenersAttached = false;
+            showTrendFallback('The chart library could not load. Please refresh the page.');
+        }, { once: true });
+    }
+
+    function resizeTrendChart() {
+        if (!trendChart) return;
+        requestAnimationFrame(() => {
+            if (trendChart) trendChart.resize();
+        });
     }
 
     /* =========================================================
